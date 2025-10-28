@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Orderan - Endless Project</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+        
+        .liquid-glass-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .liquid-glass-hover:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #5db96e 0%, #303b7e 100%);
+            min-height: 100vh;
+        }
+        
+        .brand-text {
+            background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 10px rgba(132, 204, 22, 0.3);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: rgba(255, 255, 255, 0.4); /* Lebih cerah */
+            backdrop-filter: blur(20px); /* Efek blur dikurangi agar lebih bening */
+            border: 1px solid rgba(255, 255, 255, 0.5); /* Border lebih jelas */
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #6b7280;
+            transition: color 0.3s ease;
+        }
+        
+        .close-button:hover {
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="h-full">
+    <main class="gradient-bg">
+        <!-- Header with Back Button -->
+        <header class="p-6 md:p-8">
+            <a href="index.html" class="liquid-glass liquid-glass-hover rounded-xl px-4 py-2 text-gray-800 font-medium inline-block">
+                <i class="fas fa-arrow-left mr-2"></i>Kembali
+            </a>
+        </header>
+
+        <!-- Main Content -->
+        <div class="px-6 py-8 md:py-16">
+            <div class="max-w-4xl mx-auto">
+                <!-- Single Container -->
+                <div class="liquid-glass rounded-3xl p-6 md:p-8">
+                    <!-- Page Title -->
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-2">
+                        <i class="fas fa-shopping-cart mr-3 text-orange-500"></i>Daftar Orderan
+                    </h2>
+                    <p class="text-gray-600 text-center mb-8">Lihat semua orderan yang masuk melalui bot</p>
+                    
+                    <!-- Order List -->
+                    <ul id="orderList" class="space-y-4">
+                        <li class="liquid-glass rounded-xl p-4 text-center text-gray-600">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Memuat daftar orderan...
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div id="orderDetailModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h2 class="text-xl font-bold text-gray-800 mb-6 pr-8">
+                    <i class="fas fa-receipt mr-2 text-orange-500"></i>Detail Orderan
+                </h2>
+                
+                <div class="space-y-4 text-sm">
+                    <div class="liquid-glass rounded-xl p-4">
+                        <p class="font-semibold text-gray-700 mb-2"><i class="fas fa-clock mr-2 text-gray-500"></i>Waktu Order:</p>
+                        <span id="detailTimestamp" class="text-gray-600"></span>
+                    </div>
+                    
+                    <div class="liquid-glass rounded-xl p-4">
+                        <p class="font-semibold text-gray-700 mb-2"><i class="fas fa-user mr-2 text-gray-500"></i>Nama Pelanggan:</p>
+                        <span id="detailCustomerName" class="text-gray-600"></span>
+                    </div>
+
+                    <div class="liquid-glass rounded-xl p-4">
+                        <p class="font-semibold text-gray-700 mb-2"><i class="fas fa-map-marker-alt mr-2 text-gray-500"></i>Alamat Pengiriman:</p>
+                        <address id="detailAddress" class="text-gray-600 not-italic whitespace-pre-line"></address>
+                    </div>
+                    
+                    <div class="liquid-glass rounded-xl p-4">
+                        <p class="font-semibold text-gray-700 mb-2"><i class="fas fa-box-open mr-2 text-gray-500"></i>Detail Pesanan:</p>
+                        <div id="detailItems" class="bg-gray-50 border-l-4 border-gray-400 pl-4 py-2 rounded-r-lg text-gray-700 whitespace-pre-line"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="orderan.js?v=1.0.2"></script> <!-- CACHE BUSTING: Memaksa browser download file baru -->
+    <script>
+        // Modal functionality
+        const modal = document.getElementById('orderDetailModal');
+        const closeButton = document.querySelector('.close-button');
+        
+        closeButton.onclick = function() {
+            modal.classList.remove('show');
+        }
+        
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.classList.remove('show');
+            }
+        }
+        
+        // Function to show modal (can be called from orderan.js)
+        function showOrderDetail(order) {
+            document.getElementById('detailTimestamp').textContent = order.timestamp;
+            document.getElementById('detailCustomerName').textContent = order.customer_name; // FIX: Menggunakan snake_case
+            document.getElementById('detailAddress').textContent = order.address;
+            document.getElementById('detailItems').textContent = order.items;
+            modal.classList.add('show');
+        }
+    </script>
+</body>
+</html>

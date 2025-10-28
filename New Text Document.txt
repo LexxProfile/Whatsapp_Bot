@@ -1,0 +1,15 @@
+# Docker data volumes
+n8n-ingress-data/
+n8n-processor-data/
+n8n-dispatch-data/
+mysql-data/
+
+# Node.js dependencies (if any)
+node_modules/
+
+# Python virtual environment (if any)
+venv/
+__pycache__/
+
+# Secrets files
+.env

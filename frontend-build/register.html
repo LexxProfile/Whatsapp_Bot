@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Endless Project</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { box-sizing: border-box; }
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+        .liquid-glass-hover { transition: all 0.3s ease; }
+        .liquid-glass-hover:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #5db96e 0%, #303b7e 100%);
+            min-height: 100vh;
+        }
+        /* Style tambahan untuk input */
+        input[type="tel"], input[type="password"] {
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+         input[type="tel"]:focus, input[type="password"]:focus {
+             background: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="h-full">
+    <main class="gradient-bg flex items-center justify-center min-h-screen px-4">
+        <div class="liquid-glass rounded-3xl p-8 md:p-12 w-full max-w-md">
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-8">
+                <i class="fas fa-user-plus mr-3 text-green-500"></i>Daftar Akun Baru
+            </h2>
+
+            <form id="registerForm" class="space-y-6">
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                            <i class="fas fa-phone"></i>
+                        </span>
+                        <input type="tel" id="phone" name="phone" required
+                               class="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-500 text-gray-800"
+                               placeholder="Contoh: 6281234567890">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="relative">
+                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" id="password" name="password" required
+                               class="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-500 text-gray-800"
+                               placeholder="Buat password Anda">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password</label>
+                     <div class="relative">
+                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                            <i class="fas fa-check-circle"></i>
+                        </span>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required
+                               class="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-500 text-gray-800"
+                               placeholder="Ulangi password Anda">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit"
+                            class="w-full liquid-glass liquid-glass-hover rounded-xl px-4 py-3 text-gray-800 font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        Daftar
+                    </button>
+                </div>
+            </form>
+
+            <p class="text-center mt-6 text-sm text-gray-700">
+                Sudah punya akun?
+                <a href="login.html" class="font-medium text-blue-600 hover:text-blue-800">
+                    Login di sini
+                </a>
+            </p>
+             <p id="errorMessage" class="text-center mt-4 text-red-600 text-sm font-medium hidden"></p>
+             <p id="successMessage" class="text-center mt-4 text-green-600 text-sm font-medium hidden"></p>
+        </div>
+    </main>
+
+    <script src="auth.js"></script> </body>
+</html>

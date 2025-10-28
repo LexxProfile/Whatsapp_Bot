@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+bcrypt
+PyJWT
+mysql-connector-python
+sqlalchemy
+python-multipart # <-- ADD THIS LINE

@@ -1,0 +1,100 @@
+version: '3.7' # Anda bisa menghapus baris ini jika mau, karena sudah usang
+
+services:
+  # Service untuk Message Queue (Pusat Logistik)
+  queue: # <-- Diganti dari rabbitmq
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      # Port untuk Dashboard -> Akses di http://localhost:15673
+      - "15673:15672"
+      # Port untuk komunikasi antar service
+      - "5673:5672"
+
+  # Service #1: Penerima Pesan (Resepsionis)
+  penerima: # <-- Diganti dari n8n-ingress
+    image: n8nio/n8n
+    restart: always
+    ports:
+      # Port untuk Webhook dari luar -> Akses di http://localhost:5678
+      - "5678:5678" # <-- DIKEMBALIKAN KE 5678
+    volumes:
+      - ./n8n-ingress-data:/home/node/.n8n
+    environment:
+      TZ: Asia/Jakarta
+      # --- VARIABEL DIKEMBALIKAN KE SINI KARENA MENANGANI PORT 5678 ---
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+
+  # Service #2: Prosesor Data & AI (Dapur Utama)
+  process: # <-- Diganti dari n8n-processor
+    image: n8nio/n8n
+    restart: always
+    ports:
+      # Port SEMENTARA untuk konfigurasi -> Akses di http://localhost:5679
+      - "5679:5678" # <-- DIKEMBALIKAN KE 5679
+    volumes:
+      - ./n8n-processor-data:/home/node/.n8n
+    environment:
+      TZ: Asia/Jakarta
+      # Variabel N8N dihapus dari sini
+
+  # Service #3: Pengirim Pesan (Area Pengiriman)
+  pengirim: # <-- Diganti dari n8n-dispatch
+    image: n8nio/n8n
+    restart: always
+    ports:
+      # Port SEMENTARA untuk konfigurasi -> Akses di http://localhost:5680
+      - "5680:5678"
+    volumes:
+      - ./n8n-dispatch-data:/home/node/.n8n
+    environment:
+      TZ: Asia/Jakarta
+
+  # Service #4: Frontend Web (Restoran) ⬅️ BARU
+  frontend:
+    image: nginx:alpine  # Menggunakan image nginx ringan
+    restart: always
+    ports:
+      # Port untuk mengakses web -> Akses di http://localhost:3000
+      - "3000:80"
+    volumes:
+      # Menghubungkan folder build Anda ke folder web root di nginx
+      # Pastikan Anda punya folder 'frontend-build' di direktori yang sama
+      - ./frontend-build:/usr/share/nginx/html
+
+  # Service #5: Database MySQL (Penyimpanan Data) ⬅️ BARU
+  db:
+    image: mysql:8.0  # Menggunakan image MySQL versi 8.0
+    restart: always
+    command: --default-time-zone='+07:00' # Menetapkan timezone server MySQL ke WIB (UTC+7)
+    environment:
+      MYSQL_ROOT_PASSWORD: root # Ganti ini!
+      MYSQL_DATABASE: chatbot_history # Nama database yang akan dibuat
+      MYSQL_USER: user_n8n # Nama user untuk n8n/backend Anda
+      MYSQL_PASSWORD: root # Ganti ini!
+    volumes:
+      # Menyimpan data database secara permanen di folder mysql-data
+      - ./mysql-data:/var/lib/mysql
+    ports: # Opsional: Buka port jika ingin akses dari luar kontainer (misal: pakai DBeaver)
+      - "3306:3306"
+
+  # ... (service queue, penerima, process, pengirim, frontend, db tetap sama) ...
+
+  # Service #6: Backend API (Manajer Toko)
+  backend:
+    build: ./backend # Menunjuk ke folder 'backend' tempat Dockerfile Anda
+    restart: always
+    ports:
+      # Port untuk API -> Frontend akan memanggil http://localhost:8000
+      - "8000:8000"
+    environment:
+      # Variabel untuk koneksi ke database & JWT Secret
+      DATABASE_HOST: db
+      DATABASE_USER: user_n8n
+      DATABASE_PASSWORD: root # <-- Ganti dengan password kuat & gunakan secrets!
+      DATABASE_NAME: chatbot_history
+      JWT_SECRET: AD8622 # <-- Ganti & gunakan secrets!
+    depends_on:
+      - db # Pastikan DB siap sebelum backend dimulai
