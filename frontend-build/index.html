@@ -8,37 +8,37 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             box-sizing: border-box;
         }
         
         .liquid-glass {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.7); /* Lebih putih dan jernih */
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 0, 0, 0.05); /* Border sangat tipis, hampir tidak terlihat */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05); /* Bayangan lebih lembut */
         }
         
         .liquid-glass-hover {
             transition: all 0.3s ease;
         }
-        
         .liquid-glass-hover:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.9); /* Lebih putih saat hover */
             transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
         }
         
         .gradient-bg {
-            background: linear-gradient(135deg, #5db96e 0%, #303b7e 100%);
+            background-color: #f0f2f5; /* Warna dasar abu-abu terang */
             min-height: 100vh;
         }
         
         .brand-text {
-            background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+            background: linear-gradient(135deg, #333 0%, #555 100%); /* Teks gelap */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
+            text-shadow: none; /* Hapus text-shadow */
         }
         
         .icon-container {
@@ -47,8 +47,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            color: #ffffff;
+            font-size: 22px; /* Sedikit lebih kecil */
+            color: #fff; /* Tetap putih untuk ikon di dalam lingkaran berwarna */
             margin-bottom: 12px;
         }
         
@@ -62,7 +62,7 @@
 
         /* Modal Styles */
         .modal {
-            display: none;
+            display: none; /* Tetap none, class 'show' akan mengubahnya */
             position: fixed;
             z-index: 1000;
             left: 0;
@@ -70,7 +70,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
         }
         
         .modal.show {
@@ -80,12 +80,12 @@
         }
         
         .modal-content {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(30px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            background: rgba(245, 245, 247, 0.9); /* Lebih solid putih */
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             border-radius: 20px;
-            padding: 2rem;
+            padding: 1.5rem; /* Padding sedikit dikurangi */
             max-width: 400px;
             width: 90%;
             position: relative;
@@ -95,9 +95,9 @@
         .modal-icon {
             width: 80px;
             height: 80px;
-            font-size: 40px;
-            color: #ffffff;
-            background-color: rgba(255, 255, 255, 0.2);
+            font-size: 36px; /* Sedikit lebih kecil */
+            color: #555; /* Warna ikon gelap */
+            background-color: rgba(0, 0, 0, 0.05); /* Background ikon transparan gelap */
             border-radius: 50%;
             margin: 0 auto 1.5rem auto;
         }
@@ -115,8 +115,8 @@
                     </h1>
                 </div>
                 <!-- User Profile Icon -->
-                <div id="userProfileBtn" class="liquid-glass liquid-glass-hover rounded-full p-4 cursor-pointer">
-                    <i class="fas fa-user text-2xl text-white"></i>
+                <div id="userProfileBtn" class="bg-gray-200 hover:bg-gray-300 rounded-full p-3 cursor-pointer transition-colors">
+                    <i class="fas fa-user text-xl text-gray-600"></i>
                 </div>
             </div>
         </header>
@@ -124,7 +124,7 @@
         <!-- Main Dashboard Container -->
         <div class="flex items-center justify-center px-6 py-8 md:py-16">
             <div class="liquid-glass rounded-3xl p-8 md:p-12 w-full max-w-4xl">
-                <h2 class="text-2xl md:text-3xl font-bold text-white text-center mb-8 md:mb-12">Dashboard</h2>
+                <h2 class="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-8 md:mb-12">Dashboard</h2>
                 
                 <!-- Icon Grid -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
@@ -134,7 +134,7 @@
                             <div class="icon-container liquid-glass rounded-xl mx-auto bg-green-500">
                                 <i class="fab fa-whatsapp"></i>
                             </div>
-                            <h3 class="text-white font-semibold text-sm md:text-base">WhatsApp</h3>
+                            <h3 class="text-gray-800 font-semibold text-sm md:text-base">WhatsApp</h3>
                         </div>
                     </a>
 
@@ -144,7 +144,7 @@
                             <div class="icon-container liquid-glass rounded-xl mx-auto bg-blue-500">
                                 <i class="fas fa-history"></i>
                             </div>
-                            <h3 class="text-white font-semibold text-sm md:text-base">History</h3>
+                            <h3 class="text-gray-800 font-semibold text-sm md:text-base">History</h3>
                         </div>
                     </a>
 
@@ -154,17 +154,19 @@
                             <div class="icon-container liquid-glass rounded-xl mx-auto bg-orange-500">
                                 <i class="fas fa-shopping-cart"></i>
                             </div>
-                            <h3 class="text-white font-semibold text-sm md:text-base">Orderan</h3>
+                            <h3 class="text-gray-800 font-semibold text-sm md:text-base">Orderan</h3>
                         </div>
                     </a>
 
-                    <!-- About Web -->
-                    <div class="liquid-glass liquid-glass-hover rounded-2xl p-6 text-center cursor-pointer">
-                        <div class="icon-container liquid-glass rounded-xl mx-auto bg-purple-500">
-                            <i class="fas fa-info-circle"></i>
+                    <!-- Payment History -->
+                    <a href="payment-history.html" class="block">
+                        <div class="liquid-glass liquid-glass-hover rounded-2xl p-6 text-center cursor-pointer h-full">
+                            <div class="icon-container liquid-glass rounded-xl mx-auto bg-purple-500">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                            </div>
+                            <h3 class="text-gray-800 font-semibold text-sm md:text-base">Payment History</h3>
                         </div>
-                        <h3 class="text-white font-semibold text-sm md:text-base">About Web</h3>
-                    </div>
+                    </a>
                 </div>
             </div>
         </div>
@@ -172,7 +174,7 @@
         <!-- Footer -->
         <footer class="mt-auto p-6 md:p-8">
             <div class="liquid-glass rounded-2xl p-6 md:p-8">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-gray-700">
                     <!-- Contact Info -->
                     <div>
                         <h4 class="font-bold text-lg mb-4">Contact</h4>
@@ -187,13 +189,13 @@
                     <div>
                         <h4 class="font-bold text-lg mb-4">Follow Us</h4>
                         <div class="flex space-x-4">
-                            <a href="#" class="liquid-glass rounded-lg p-3 liquid-glass-hover">
+                            <a href="#" class="bg-gray-200 hover:bg-gray-300 rounded-lg p-3 transition-colors">
                                 <i class="fab fa-instagram text-xl"></i>
                             </a>
-                            <a href="#" class="liquid-glass rounded-lg p-3 liquid-glass-hover">
+                            <a href="#" class="bg-gray-200 hover:bg-gray-300 rounded-lg p-3 transition-colors">
                                 <i class="fab fa-github text-xl"></i>
                             </a>
-                            <a href="#" class="liquid-glass rounded-lg p-3 liquid-glass-hover">
+                            <a href="#" class="bg-gray-200 hover:bg-gray-300 rounded-lg p-3 transition-colors">
                                 <i class="fab fa-linkedin text-xl"></i>
                             </a>
                         </div>
@@ -212,7 +214,7 @@
                 </div>
 
                 <!-- Copyright -->
-                <div class="border-t border-white/20 mt-6 pt-6 text-center text-white/80 text-sm">
+                <div class="border-t border-black/10 mt-6 pt-6 text-center text-gray-500 text-sm">
                     <p>&copy; 2024 Endless Project. All rights reserved.</p>
                 </div>
             </div>
@@ -223,34 +225,34 @@
     <div id="userProfileModal" class="modal">
         <div class="modal-content">
             <!-- User Icon -->
-            <div class="icon-container modal-icon liquid-glass">
-                <i class="fas fa-user"></i>
+            <div class="icon-container modal-icon bg-gray-200">
+                <i class="fas fa-user text-gray-600"></i>
             </div>
 
             <!-- User Info -->
-            <div class="space-y-4 text-white mb-8">
+            <div class="space-y-4 text-gray-800 mb-8">
                 <div>
                     <h3 id="userName" class="text-xl font-bold">Guest</h3>
-                    <p id="userPhone" class="text-sm text-white/80">Silakan login untuk melihat info</p>
+                    <p id="userPhone" class="text-sm text-gray-500">Silakan login untuk melihat info</p>
                 </div>
                 
                 <!-- Login/Register Link -->
                 <div id="authLinks">
                     <p class="text-sm">
-                        <a href="login.html" class="font-semibold text-lime-300 hover:text-lime-200">Login</a>
+                        <a href="login.html" class="font-semibold text-blue-600 hover:text-blue-500">Login</a>
                         <span class="mx-2">atau</span>
-                        <a href="register.html" class="font-semibold text-lime-300 hover:text-lime-200">Register</a>
+                        <a href="register.html" class="font-semibold text-blue-600 hover:text-blue-500">Register</a>
                     </p>
                 </div>
 
                 <!-- Logout Button (hidden by default) -->
-                <button id="logoutBtn" class="hidden w-full bg-red-500/50 hover:bg-red-600/60 rounded-xl px-4 py-3 text-white font-semibold transition-colors duration-300">
+                <button id="logoutBtn" class="hidden w-full bg-red-500 hover:bg-red-600 rounded-xl px-4 py-3 text-white font-semibold transition-colors duration-300">
                     <i class="fas fa-sign-out-alt mr-2"></i>Logout
                 </button>
             </div>
 
             <!-- Close Modal Button -->
-            <button id="closeModalBtn" class="w-full liquid-glass liquid-glass-hover rounded-xl px-4 py-3 text-white font-semibold">
+            <button id="closeModalBtn" class="w-full bg-gray-200 hover:bg-gray-300 rounded-xl px-4 py-3 text-gray-700 font-semibold transition-colors">
                 <i class="fas fa-arrow-left mr-2"></i>Kembali
             </button>
         </div>

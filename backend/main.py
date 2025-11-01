@@ -1,11 +1,13 @@
 import os
 import bcrypt
+import shutil # Impor modul shutil untuk streaming file
+import uuid
 import jwt
-from typing import Optional
-from datetime import datetime, timedelta, timezone # Import timezone
-from fastapi import FastAPI, HTTPException, Depends, status
+from typing import Optional, Union
+from datetime import datetime, timedelta, timezone
+from fastapi import FastAPI, HTTPException, Depends, status, Form, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer # Tetap pakai ini untuk dependensi
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware # Tambahkan UploadFile dan File
 from pydantic import BaseModel
 import mysql.connector
 from dotenv import load_dotenv
@@ -18,8 +20,9 @@ app = FastAPI(title="Chatbot Backend API", description="API untuk mengelola user
 
 # --- Konfigurasi CORS ---
 origins = [
-    "http://localhost:3000", # Alamat frontend Anda
-    # Tambahkan origin production Anda nanti jika perlu
+    # Menggunakan wildcard (*) untuk mengizinkan semua origin selama pengembangan.
+    # Ini akan menyelesaikan masalah "Failed to fetch" yang disebabkan oleh perubahan IP.
+    "*"
 ]
 
 app.add_middleware(
@@ -59,19 +62,24 @@ class TokenData(BaseModel):
 class OrderCreate(BaseModel):
     item_name: str
     quantity: int
+    chat_id: Optional[int] = None # Tambahkan chat_id
     # Harga dan total bisa ditambahkan di sini jika perlu
     # item_price: float
+
+# Model untuk update status
+class OrderStatusUpdate(BaseModel):
+    status: str
 
 # --- Koneksi Database ---
 def get_db_connection():
     try:
-        # Menambahkan connection_timeout
+        # [FIX] Menambahkan connection_timeout untuk mencegah hang
         conn = mysql.connector.connect(
             host=DATABASE_HOST,
             user=DATABASE_USER,
             password=DATABASE_PASSWORD,
             database=DATABASE_NAME,
-            connection_timeout=10 # Timeout setelah 10 detik jika gagal konek
+            connection_timeout=10 # Timeout setelah 10 detik
         )
         # Periksa koneksi
         if conn.is_connected():
@@ -345,7 +353,8 @@ async def read_orders(current_user_phone: str = Depends(get_current_user)):
             phone_with_0 = '0' + current_user_phone[2:]
         
         cursor.execute(
-            "SELECT id, waktu, customer_name, address, items, status FROM orders WHERE user_phone_number IN (%s, %s, %s) ORDER BY waktu DESC LIMIT 50",
+            # HANYA TAMPILKAN ORDERAN YANG STATUSNYA 'Baru'
+            "SELECT id, waktu, customer_name, address, items, status FROM orders WHERE user_phone_number IN (%s, %s, %s) AND status = 'Baru' ORDER BY waktu DESC LIMIT 50",
             (current_user_phone, phone_with_62, phone_with_0)
         )
         orders_from_db = cursor.fetchall()
@@ -366,3 +375,263 @@ async def read_orders(current_user_phone: str = Depends(get_current_user)):
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
+
+# ... (impor lain, app, CORS, koneksi DB, dll.) ...
+
+# --- Fungsi Bantuan untuk Membersihkan Harga ---
+def clean_price_string(price_str: Optional[str]) -> Optional[Union[int, float]]:
+    """Membersihkan string harga (Rp, ., ,) dan mengonversinya ke angka."""
+    if price_str is None or not isinstance(price_str, str):
+        return None # Mengembalikan None jika input tidak valid, sesuai dengan type hint
+
+    try:
+        # Hapus 'Rp ', '.', dan ganti ',' (jika ada sebagai pemisah desimal) dengan '.'
+        cleaned_str = price_str.replace('Rp ', '').replace('.', '').replace(',', '.')
+        # Konversi ke float jika ada desimal, jika tidak, coba int
+        if '.' in cleaned_str:
+             # Coba float, jika gagal (misal: "N/A"), kembalikan 0
+             try:
+                 return float(cleaned_str)
+             except ValueError:
+                 return None # Mengembalikan None jika parsing float gagal
+        else:
+             # Coba integer, jika gagal, kembalikan 0
+             try:
+                 return int(cleaned_str)
+             except ValueError:
+                 return None # Mengembalikan None jika parsing int gagal
+    except Exception:
+        # Tangkap error lain jika terjadi saat pembersihan
+        return None # Mengembalikan None jika ada masalah tak terduga
+
+# --- Endpoint untuk MENGAMBIL Data Sparepart (Sudah Dimodifikasi) ---
+@app.get("/api/spareparts")
+async def get_spareparts(current_user_phone: str = Depends(get_current_user)):
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True) # Menggunakan dictionary cursor
+
+        # Ambil kolom yang relevan dari database
+        # Pastikan nama kolom di query ini sama persis dengan di DB Anda
+        cursor.execute("""
+            SELECT
+                `Nomor Sparepart` as part_number,
+                `Nama Sparepart` as part_name,
+                `Harga jual exc tax` as price_str  -- Ambil sebagai string
+            FROM sparepart_data
+        """)
+        spareparts_from_db = cursor.fetchall()
+
+        # --- LANGKAH PEMBERSIHAN DAN KONVERSI ---
+        cleaned_spareparts = []
+        for part in spareparts_from_db:
+            cleaned_price = clean_price_string(part.get("price_str")) # Panggil fungsi pembersih
+            cleaned_spareparts.append({ # Frontend mengharapkan price berupa angka, atau null jika tidak ditemukan/invalid
+                "part_number": part.get("part_number", "").strip(), # Tambah .strip() juga
+                "part_name": part.get("part_name", "").strip(),
+                "price": cleaned_price # Masukkan harga yang sudah jadi angka
+            })
+        # ----------------------------------------
+
+        return cleaned_spareparts # Kirim data yang sudah bersih ke frontend
+
+    except mysql.connector.Error as err:
+        print(f"Spareparts DB Error: {err}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Gagal mengambil data sparepart.")
+    # ... (sisa error handling sama) ...
+    finally:
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
+
+
+# --- [BARU] Endpoint untuk MEMULAI Sesi Pembayaran ---
+@app.post("/api/payments/initiate", status_code=status.HTTP_201_CREATED)
+async def initiate_payment(
+    order_ids: str = Form(...), # "1,2,3"
+    total_amount: float = Form(...),
+    item_details: str = Form(...), # Menerima detail item sebagai string JSON
+    current_user_phone: str = Depends(get_current_user) # Otentikasi
+):
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # 1. Buat ID transaksi yang unik
+        transaction_id = str(uuid.uuid4())
+
+        # [FIX] Hitung waktu kedaluwarsa menggunakan zona waktu WIB (UTC+7) agar konsisten dengan DB
+        wib_timezone = timezone(timedelta(hours=7))
+        expires_at = datetime.now(wib_timezone) + timedelta(minutes=5)
+
+        # 2. Simpan detail transaksi ke tabel baru `payment_transactions`
+        cursor.execute(
+            """
+            INSERT INTO payment_transactions (id, order_ids, total_amount, item_details, expires_at, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (transaction_id, order_ids, total_amount, item_details, expires_at, 'PENDING')
+        )
+        conn.commit()
+
+        # [FIX] Langsung ubah status orderan menjadi 'Menunggu Pembayaran'
+        # agar tidak muncul lagi di halaman orderan.
+        if order_ids:
+            ids_to_update = tuple(map(int, order_ids.split(',')))
+            if ids_to_update:
+                query = "UPDATE orders SET status = 'Menunggu Pembayaran' WHERE id IN ({})".format(','.join(['%s'] * len(ids_to_update)))
+                update_cursor = conn.cursor()
+                update_cursor.execute(query, ids_to_update)
+                update_cursor.close()
+                conn.commit()
+
+        # 3. Kembalikan ID transaksi ke frontend
+        return {"transaction_id": transaction_id}
+
+    except mysql.connector.Error as err:
+        print(f"Initiate Payment DB Error: {err}")
+        raise HTTPException(status_code=500, detail="Gagal memulai sesi pembayaran.")
+    except Exception as e:
+        print(f"Initiate Payment Unexpected Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Terjadi kesalahan tidak terduga: {e}")
+    finally:
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
+
+# --- [BARU] Endpoint untuk MEMERIKSA Status Pembayaran ---
+@app.get("/api/payments/status/{transaction_id}")
+async def get_payment_status(transaction_id: str):
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT status, expires_at FROM payment_transactions WHERE id = %s", (transaction_id,))
+        transaction = cursor.fetchone()
+
+        if not transaction:
+            raise HTTPException(status_code=404, detail="Transaksi tidak ditemukan.")
+
+        # [FIX] Cek kedaluwarsa menggunakan zona waktu WIB (UTC+7)
+        wib_timezone = timezone(timedelta(hours=7))
+        # Tambahkan .replace(tzinfo=wib_timezone) untuk membuat waktu dari DB menjadi 'aware'
+        db_expires_at = transaction['expires_at'].replace(tzinfo=wib_timezone) if transaction.get('expires_at') else None
+
+        if transaction['status'] == 'PENDING' and db_expires_at and datetime.now(wib_timezone) > db_expires_at:
+            # Update status di DB menjadi EXPIRED agar tidak dicek lagi
+            cursor.execute("UPDATE payment_transactions SET status = 'GAGAL' WHERE id = %s", (transaction_id,))
+            conn.commit()
+            return {"status": "GAGAL"}
+
+        return {"status": transaction['status']}
+
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Database error: {err}")
+    finally:
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
+
+# --- [BARU] Endpoint untuk MEMBACA Riwayat Pembayaran ---
+@app.get("/api/payments/history")
+async def get_payment_history(current_user_phone: str = Depends(get_current_user)):
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        # Menggunakan cursor dictionary untuk mendapatkan hasil sebagai objek
+        cursor = conn.cursor(dictionary=True)
+
+        # Query untuk mengambil semua transaksi berdasarkan order yang dimiliki user
+        # Ini adalah query yang cukup kompleks, menggabungkan data dari 'orders' dan 'payment_transactions'
+        query = """
+            SELECT DISTINCT pt.*
+            FROM payment_transactions pt
+            JOIN orders o ON FIND_IN_SET(o.id, pt.order_ids)
+            WHERE o.user_phone_number = %s
+            ORDER BY pt.created_at DESC;
+        """
+        cursor.execute(query, (current_user_phone,))
+        history = cursor.fetchall()
+
+        wib_timezone = timezone(timedelta(hours=7))
+        now_wib = datetime.now(wib_timezone)
+
+        # Format waktu ke ISO string agar konsisten di frontend
+        for record in history:
+            # [FIX] Cek dan update status kedaluwarsa secara proaktif
+            if record.get('status') == 'PENDING' and record.get('expires_at'):
+                # Waktu dari DB adalah naive, jadi kita buat aware
+                db_expires_at = record['expires_at'].replace(tzinfo=wib_timezone)
+                print(f"DEBUG HISTORY: Transaction ID: {record['id']}")
+                print(f"DEBUG HISTORY: now_wib: {now_wib}")
+                print(f"DEBUG HISTORY: db_expires_at: {db_expires_at}")
+                print(f"DEBUG HISTORY: now_wib > db_expires_at: {now_wib > db_expires_at}")
+                if now_wib > db_expires_at:
+                    # Update status di DB
+                    update_cursor = conn.cursor()
+                    update_cursor.execute("UPDATE payment_transactions SET status = 'GAGAL' WHERE id = %s", (record['id'],))
+                    conn.commit()
+                    update_cursor.close()
+                    # Update status di data yang akan dikirim ke frontend
+                    record['status'] = 'GAGAL'
+
+            if record.get('created_at'):
+                record['created_at'] = record['created_at'].isoformat()
+
+            if record.get('expires_at'):
+                record['expires_at'] = record['expires_at'].isoformat()
+
+        return history
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gagal mengambil riwayat pembayaran: {e}")
+    finally:
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
+
+# --- [MODIFIKASI] Endpoint untuk MENGONFIRMASI Pembayaran ---
+@app.post("/api/payments/confirm/{transaction_id}")
+async def confirm_payment(transaction_id: str):
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 1. Ambil detail transaksi
+        cursor.execute("SELECT order_ids, status, expires_at FROM payment_transactions WHERE id = %s", (transaction_id,))
+        transaction = cursor.fetchone()
+
+        if not transaction:
+            raise HTTPException(status_code=404, detail="Transaksi tidak ditemukan.")
+        if transaction['status'] == 'LUNAS':
+            return {"message": "Pembayaran ini sudah pernah dikonfirmasi."}
+        
+        # [FIX] Cek kedaluwarsa menggunakan zona waktu WIB (UTC+7)
+        wib_timezone = timezone(timedelta(hours=7))
+        # Tambahkan .replace(tzinfo=wib_timezone) untuk membuat waktu dari DB menjadi 'aware'
+        db_expires_at = transaction['expires_at'].replace(tzinfo=wib_timezone) if transaction.get('expires_at') else None
+
+        if db_expires_at and datetime.now(wib_timezone) > db_expires_at:
+            raise HTTPException(status_code=400, detail="Waktu pembayaran telah habis. Silakan buat transaksi baru.")
+
+        # 2. Update status di tabel `payment_transactions` menjadi 'LUNAS'
+        cursor.execute("UPDATE payment_transactions SET status = 'LUNAS' WHERE id = %s", (transaction_id,))
+
+        # 3. Update status di tabel `orders`
+        # Logika ini sudah dipindahkan ke `initiate_payment`.
+        # Di sini kita hanya perlu commit perubahan status transaksi pembayaran.
+                
+        conn.commit()
+
+        return {"message": "Pembayaran berhasil dikonfirmasi."}
+
+    except mysql.connector.Error as err:
+        raise HTTPException(status_code=500, detail=f"Gagal konfirmasi pembayaran: {err}")
+    finally:
+        if cursor: cursor.close()
+        if conn and conn.is_connected(): conn.close()
+# ... (endpoint lain tetap sama) ...
