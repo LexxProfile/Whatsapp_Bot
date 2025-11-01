@@ -8,15 +8,15 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             box-sizing: border-box;
         }
         
         .liquid-glass {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 
-                        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
         
         .liquid-glass-hover {
@@ -24,14 +24,13 @@
         }
         
         .liquid-glass-hover:hover {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.9);
             transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 
-                        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
         }
         
         .gradient-bg {
-            background: linear-gradient(135deg, #5db96e 0%, #303b7e 100%);
+            background-color: #f0f2f5;
             min-height: 100vh;
         }
         
@@ -52,7 +51,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
         }
         
         .modal.show {
@@ -62,12 +61,12 @@
         }
         
         .modal-content {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(30px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            background: rgba(245, 245, 247, 0.9);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             border-radius: 20px;
-            padding: 2rem;
+            padding: 1.5rem;
             max-width: 600px;
             width: 90%;
             max-height: 80vh;
@@ -81,7 +80,7 @@
             right: 1.5rem; 
             font-size: 2rem;
             cursor: pointer;
-            color: #e5e7eb; /* Warna diubah menjadi abu-abu terang */
+            color: #9ca3af; /* text-gray-400 */
             transition: color 0.3s ease;
         }
         
@@ -113,12 +112,18 @@
                 <div class="liquid-glass rounded-3xl p-6 md:p-8">
                     <!-- Page Title -->
                     <h2 class="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-2">
-                    <h2 class="text-2xl md:text-3xl font-bold text-white text-center mb-2">
+                    
                         <i class="fas fa-history mr-3 text-blue-500"></i>Riwayat Chat
                     </h2>
                     <p class="text-gray-600 text-center mb-8">Lihat semua percakapan Anda dengan bot</p>
-                    <p class="text-gray-300 text-center mb-8">Lihat semua percakapan Anda dengan bot</p>
-                    
+
+                    <!-- Search Bar -->
+                    <div class="mb-8">
+                        <input type="text" id="searchInput" placeholder="Cari berdasarkan ID chat, nomor sparepart, atau pesan..."
+                               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
+                               style="background: rgba(229, 231, 235, 0.5);">
+                    </div>
+                
                     <!-- History List -->
                     <ul id="historyList" class="space-y-4">
                         <li class="liquid-glass rounded-xl p-4 text-center text-gray-600">
@@ -134,36 +139,29 @@
             <div class="modal-content">
                 <span class="close-button">&times;</span>
                 <h2 class="text-xl font-bold text-gray-800 mb-6 pr-8">
-                <h2 class="text-xl font-bold text-gray-100 mb-6 pr-8">
-                    <i class="fas fa-comments mr-2 text-blue-500"></i>Detail Percakapan
+                    <i class="fas fa-comments mr-2 text-blue-600"></i>Detail Percakapan
                 </h2>
                 
                 <div class="space-y-4">
-                    <div class="liquid-glass rounded-xl p-4">
-                        <p class="font-semibold text-gray-700 mb-2">
-                        <p class="font-semibold text-gray-200 mb-2">
-                            <i class="fas fa-clock mr-2 text-green-500"></i>Waktu:
+                    <div class="bg-white/50 rounded-xl p-4">
+                        <p class="font-semibold text-gray-600 mb-2">
+                            <i class="fas fa-clock mr-2 text-gray-500"></i>Waktu:
                         </p>
-                        <span id="detailTimestamp" class="text-gray-600"></span>
-                        <span id="detailTimestamp" class="text-white"></span>
+                        <span id="detailTimestamp" class="text-gray-800"></span>
                     </div>
                     
-                    <div class="liquid-glass rounded-xl p-4">
-                        <p class="font-semibold text-gray-700 mb-3">
-                        <p class="font-semibold text-gray-200 mb-3">
-                            <i class="fas fa-user mr-2 text-blue-500"></i>Anda:
+                    <div class="bg-white/50 rounded-xl p-4">
+                        <p class="font-semibold text-gray-600 mb-3">
+                            <i class="fas fa-user mr-2 text-blue-600"></i>Anda:
                         </p>
-                        <blockquote id="detailUserChat" class="bg-blue-50 border-l-4 border-blue-400 pl-4 py-2 rounded-r-lg text-gray-700"></blockquote>
-                        <blockquote id="detailUserChat" class="bg-blue-500/20 border-l-4 border-blue-400 pl-4 py-2 rounded-r-lg text-white"></blockquote>
+                        <blockquote id="detailUserChat" class="bg-blue-100 border-l-4 border-blue-500 pl-4 py-2 rounded-r-lg text-gray-700"></blockquote>
                     </div>
                     
-                    <div class="liquid-glass rounded-xl p-4">
-                        <p class="font-semibold text-gray-700 mb-3">
-                        <p class="font-semibold text-gray-200 mb-3">
-                            <i class="fas fa-robot mr-2 text-green-500"></i>Bot:
+                    <div class="bg-white/50 rounded-xl p-4">
+                        <p class="font-semibold text-gray-600 mb-3">
+                            <i class="fas fa-robot mr-2 text-green-600"></i>Bot:
                         </p>
-                        <blockquote id="detailBotChat" class="bg-green-50 border-l-4 border-green-400 pl-4 py-2 rounded-r-lg text-gray-700"></blockquote>
-                        <blockquote id="detailBotChat" class="bg-green-500/20 border-l-4 border-green-400 pl-4 py-2 rounded-r-lg text-white"></blockquote>
+                        <blockquote id="detailBotChat" class="bg-green-100 border-l-4 border-green-500 pl-4 py-2 rounded-r-lg text-gray-700"></blockquote>
                     </div>
                 </div>
             </div>
@@ -174,21 +172,21 @@
     <div id="addOrderModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeAddOrderModal()">&times;</span> 
-            <h2 class="text-xl font-bold text-gray-100 mb-6 pr-8">
-                <i class="fas fa-cart-plus mr-2 text-orange-500"></i>Tambah ke Orderan
+            <h2 class="text-xl font-bold text-gray-800 mb-6 pr-8">
+                <i class="fas fa-cart-plus mr-2 text-orange-600"></i>Tambah ke Orderan
             </h2>
             
             <form id="addOrderForm" class="space-y-4">
-                <div class="liquid-glass rounded-xl p-4">
-                    <p class="font-semibold text-gray-200 mb-2">Nama Barang:</p>
-                    <span id="orderItemName" class="text-white font-bold"></span>
+                <div class="bg-white/50 rounded-xl p-4">
+                    <p class="font-semibold text-gray-600 mb-2">Nama Barang:</p>
+                    <span id="orderItemName" class="text-gray-800 font-bold"></span>
                 </div>
                 
                 <div>
-                    <label for="orderQuantity" class="block text-sm font-medium text-gray-200 mb-1">Jumlah (Pcs):</label>
+                    <label for="orderQuantity" class="block text-sm font-medium text-gray-600 mb-1">Jumlah (Pcs):</label>
                     <input type="number" id="orderQuantity" name="quantity" required min="1" value="1"
-                           class="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-400 text-white"
-                           style="background: rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.5);">
+                           class="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 text-gray-800"
+                           style="background: rgba(229, 231, 235, 0.5); border-color: rgba(209, 213, 219, 0.7);">
                 </div>
 
                 <p id="orderError" class="text-red-600 text-sm font-medium hidden"></p>
@@ -196,7 +194,7 @@
 
                 <div>
                     <button type="submit"
-                            class="w-full bg-orange-500 hover:bg-orange-600 rounded-xl px-4 py-3 text-white font-semibold transition-colors duration-300">
+                            class="w-full bg-orange-600 hover:bg-orange-700 rounded-xl px-4 py-3 text-white font-semibold transition-colors duration-300">
                         <i class="fas fa-check mr-2"></i>Konfirmasi Order
                     </button>
                 </div>
@@ -230,8 +228,10 @@
 
         // Modal Add Order Functionality
         const addOrderModal = document.getElementById('addOrderModal');
-        function showAddOrderModal(itemName) {
+        function showAddOrderModal(itemName, chatId) {
+            const addOrderForm = document.getElementById('addOrderForm');
             document.getElementById('orderItemName').textContent = itemName;
+            addOrderForm.dataset.chatId = chatId; // Simpan chat_id di form
             document.getElementById('orderQuantity').value = 1; // Reset ke 1
             document.getElementById('orderError').classList.add('hidden');
             document.getElementById('orderSuccess').classList.add('hidden');

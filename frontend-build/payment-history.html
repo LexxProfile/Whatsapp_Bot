@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Pembayaran - Endless Project</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; }
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .gradient-bg {
+            background-color: #f0f2f5;
+            min-height: 100vh;
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .status-lunas { background-color: #10B981; color: white; }
+        .status-pending { background-color: #F59E0B; color: white; }
+        .detail-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .filter-btn.selected {
+            background: rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="h-full">
+    <main class="gradient-bg py-12 px-4">
+        <div class="max-w-4xl mx-auto">
+            
+            <div class="text-center mb-8">
+                <a href="index.html" class="absolute top-6 left-6 text-gray-600 hover:text-black transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Kembali
+                </a>
+                <h2 class="text-2xl md:text-3xl font-bold text-gray-800">
+                    <i class="fas fa-history mr-3 text-purple-600"></i>Riwayat Pembayaran
+                </h2>
+                <p class="text-gray-500 mt-2">Lihat semua transaksi pembayaran Anda.</p>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="flex justify-center space-x-2 mb-8">
+                <button id="filter-all" class="filter-btn bg-black/5 text-gray-700 px-4 py-2 rounded-lg hover:bg-black/10 transition-colors selected">Semua</button>
+                <button id="filter-lunas" class="filter-btn bg-black/5 text-gray-700 px-4 py-2 rounded-lg hover:bg-black/10 transition-colors">Berhasil</button>
+                <button id="filter-pending" class="filter-btn bg-black/5 text-gray-700 px-4 py-2 rounded-lg hover:bg-black/10 transition-colors">Proses</button>
+                <button id="filter-gagal" class="filter-btn bg-black/5 text-gray-700 px-4 py-2 rounded-lg hover:bg-black/10 transition-colors">Gagal</button>
+            </div>
+
+            <!-- Daftar Riwayat -->
+            <ul id="historyList" class="space-y-4">
+                <!-- Loading State -->
+                <li id="loading-state" class="liquid-glass rounded-xl p-6 text-center text-gray-600">
+                    <i class="fas fa-spinner fa-spin text-xl mr-3"></i>
+                    Memuat riwayat...
+                </li>
+                <!-- Empty State (hidden by default) -->
+                <li id="empty-state" class="hidden liquid-glass rounded-xl p-6 text-center text-gray-600">
+                    <i class="fas fa-file-invoice-dollar text-2xl mb-3"></i>
+                    <p>Tidak ada riwayat pembayaran yang ditemukan.</p>
+                </li>
+            </ul>
+
+        </div>
+    </main>
+
+    <script src="payment-history.js"></script>
+</body>
+</html>

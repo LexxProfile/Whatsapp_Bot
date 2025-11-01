@@ -1,0 +1,36 @@
+name: Deploy Microservices
+
+# Trigger on push to the 'master' branch (since your branch is master)
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # Use a Linux runner
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4 # Download your repository code
+
+    # --- Basic CI: Validate Docker Compose ---
+    - name: Validate Docker Compose
+      run: docker-compose -f docker-compose.yml config
+
+    # --- CD: Deploy to VPS via SSH ---
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}          # Your VPS IP Address
+        username: ${{ secrets.VPS_USERNAME }}    # Your SSH username
+        key: ${{ secrets.SSH_PRIVATE_KEY }}   # Your SSH private key
+        script: |
+          echo "Connecting to VPS..."
+          cd ~/my-whatsapp-chatbot || exit 1 # Go to project folder on VPS
+          echo "Pulling latest code..."
+          git pull origin master || exit 1      # Get latest code from master branch
+          echo "Pulling latest Docker images..."
+          docker-compose pull              # Download updated images (like backend)
+          echo "Restarting services..."
+          docker-compose up -d --remove-orphans # Apply changes and restart
+          echo "Deployment finished!"
