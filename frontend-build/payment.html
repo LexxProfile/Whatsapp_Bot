@@ -19,21 +19,6 @@
             background-color: #f0f2f5;
             min-height: 100vh;
         }
-        .payment-method {
-            transition: all 0.3s ease;
-        }
-        .payment-method.selected {
-            background: rgba(255, 255, 255, 0.9);
-            border-color: rgba(0, 0, 0, 0.1);
-            transform: scale(1.05);
-        }
-        .file-upload-label {
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .file-upload-label:hover {
-            background: rgba(255, 255, 255, 0.25);
-        }
     </style>
 </head>
 <body class="h-full">
@@ -58,44 +43,16 @@
                     <p class="text-xs text-gray-500">Jumlah sudah termasuk PPN 11%</p>
                 </div>
 
-                <!-- Pilihan Metode Pembayaran -->
-                <div class="mb-8">
-                    <h3 class="font-bold text-lg mb-4 text-center">Pilih Metode Pembayaran</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div id="method-bank" class="payment-method liquid-glass rounded-xl p-4 text-center cursor-pointer">
-                            <i class="fas fa-university text-3xl mb-2"></i>
-                            <p class="font-semibold">Transfer Bank</p>
-                        </div>
-                        <div id="method-qris" class="payment-method liquid-glass rounded-xl p-4 text-center cursor-pointer">
-                            <i class="fas fa-qrcode text-3xl mb-2"></i>
-                            <p class="font-semibold">QRIS</p>
-                        </div>
+                <!-- Detail Pembayaran QRIS -->
+                <div id="qris-details" class="liquid-glass rounded-xl p-6 text-center">
+                    <h4 class="font-bold mb-4"><i class="fas fa-qrcode mr-2 text-blue-600"></i>Scan QR Code untuk Melanjutkan Pembayaran</h4>
+                    <!-- Placeholder untuk QR Code -->
+                    <div id="qrcode-container" class="flex justify-center items-center h-48 bg-white/50 rounded-lg">
+                        <i class="fas fa-spinner fa-spin text-2xl text-gray-700"></i>
                     </div>
-                </div>
-
-                <!-- Detail Pembayaran (muncul setelah metode dipilih) -->
-                <div id="payment-details" class="hidden space-y-6">
-                    <!-- Detail Transfer Bank -->
-                    <div id="bank-details" class="hidden liquid-glass rounded-xl p-6 text-gray-800">
-                        <h4 class="font-bold mb-3"><i class="fas fa-university mr-2 text-blue-600"></i>Silakan transfer ke rekening berikut:</h4>
-                        <div class="bg-gray-100 rounded-lg p-4 text-center">
-                            <p class="text-sm text-gray-600">Bank Central Asia (BCA)</p>
-                            <p class="text-2xl font-mono font-bold my-1 text-gray-800">123 456 7890</p>
-                            <p class="font-semibold text-gray-700">a.n. PT Endless Project</p>
-                        </div>
-                    </div>
-
-                    <!-- Detail QRIS -->
-                    <div id="qris-details" class="hidden liquid-glass rounded-xl p-6 text-center">
-                        <h4 class="font-bold mb-4"><i class="fas fa-qrcode mr-2 text-blue-600"></i>Scan QR Code di bawah ini:</h4>
-                        <!-- Placeholder untuk QR Code -->
-                        <div id="qrcode-container" class="flex justify-center items-center h-48 bg-white/50 rounded-lg">
-                            <i class="fas fa-spinner fa-spin text-2xl text-gray-700"></i>
-                        </div>
-                        <!-- Status Pembayaran -->
-                        <p id="payment-status-text" class="text-lg font-semibold mt-4"><i class="fas fa-hourglass-half mr-2"></i>Menunggu Pembayaran...</p>
-                        <p class="text-sm text-gray-600 mt-1">Status akan diperbarui secara otomatis setelah pembayaran Anda terdeteksi.</p>
-                    </div>
+                    <!-- Status Pembayaran -->
+                    <p id="payment-status-text" class="text-lg font-semibold mt-4"><i class="fas fa-hourglass-half mr-2"></i>Menunggu Pembayaran...</p>
+                    <p class="text-sm text-gray-600 mt-1">Status akan diperbarui secara otomatis. QR code akan diperbarui setiap 3 menit.</p>
                 </div>
 
                 <p id="paymentError" class="text-center text-red-600 text-sm mt-4 hidden"></p>
@@ -104,77 +61,53 @@
     </main>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             // Ambil elemen
             const paymentTotalEl = document.getElementById('paymentTotal');
-            const paymentDetailsSection = document.getElementById('payment-details');
-            const methodBankBtn = document.getElementById('method-bank');
-            const methodQrisBtn = document.getElementById('method-qris');
-            const bankDetails = document.getElementById('bank-details');
-            const qrisDetails = document.getElementById('qris-details');
             const qrcodeContainer = document.getElementById('qrcode-container');
             const paymentStatusText = document.getElementById('payment-status-text');
             const paymentErrorEl = document.getElementById('paymentError');
             const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
 
-            let selectedMethod = null;
-            let pollingInterval; // Variabel untuk menyimpan interval
+            let pollingInterval; // Variabel untuk menyimpan interval polling status
+            let qrRefreshInterval; // Variabel untuk menyimpan interval refresh QR
+
             // 1. Ambil data dari localStorage dan tampilkan total
             const paymentData = JSON.parse(localStorage.getItem('paymentDetails'));
             if (paymentData && paymentData.total) {
                 paymentTotalEl.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(paymentData.total);
-                // Jika paymentData ada, kita bisa langsung panggil initiateQrisPayment jika QRIS adalah metode default atau yang terakhir dipilih
-                // Namun, karena user harus memilih metode, kita biarkan dipanggil saat klik methodQrisBtn
+                
+                // Langsung mulai pembayaran QRIS saat halaman dimuat
+                await initiateQrisPayment();
+
+                // Atur interval untuk me-refresh QR code
+                qrRefreshInterval = setInterval(initiateQrisPayment, 180000); // Refresh setiap 3 menit
+
             } else {
                 paymentTotalEl.textContent = 'Error';
                 paymentErrorEl.textContent = 'Data total pembayaran tidak ditemukan. Silakan kembali ke halaman orderan.';
                 paymentErrorEl.classList.remove('hidden');
-                // Juga tampilkan error di qrcode-container jika paymentData tidak ada
                 qrcodeContainer.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-2"></i><span class="text-red-500">Data pembayaran tidak ditemukan.</span>`;
                 paymentStatusText.textContent = 'Gagal memuat pembayaran.';
-                return; // Hentikan eksekusi script lebih lanjut jika tidak ada paymentData
+                return; // Hentikan eksekusi
             }
 
-            // 2. Event listener untuk pilihan metode pembayaran
-            methodBankBtn.addEventListener('click', () => {
-                selectedMethod = 'bank';
-                methodBankBtn.classList.add('selected');
-                methodQrisBtn.classList.remove('selected');
-                paymentDetailsSection.classList.remove('hidden');
-                bankDetails.classList.remove('hidden');
-                qrisDetails.classList.add('hidden');
-            });
-
-            methodQrisBtn.addEventListener('click', async () => {
-                selectedMethod = 'qris';
-                methodQrisBtn.classList.add('selected');
-                methodBankBtn.classList.remove('selected');
-                paymentDetailsSection.classList.remove('hidden');
-                qrisDetails.classList.remove('hidden');
-                bankDetails.classList.add('hidden');
-
-                // Hentikan polling sebelumnya jika ada
-                if (pollingInterval) clearInterval(pollingInterval);
-
-                // Panggil fungsi untuk memulai sesi pembayaran
-                if (paymentData && paymentData.total) { // Pastikan paymentData ada sebelum memanggil
-                    await initiateQrisPayment();
-                } else {
-                    paymentErrorEl.textContent = 'Tidak dapat memulai pembayaran QRIS: Data pembayaran tidak lengkap.';
-                    paymentErrorEl.classList.remove('hidden');
-                }
-            });
-
-            // 3. Fungsi untuk memulai sesi pembayaran QRIS
+            // 2. Fungsi untuk memulai sesi pembayaran QRIS
             async function initiateQrisPayment() {
                 if (!paymentData) return;
 
+                // Tampilkan spinner setiap kali QR code akan di-generate ulang
+                qrcodeContainer.innerHTML = `<i class="fas fa-spinner fa-spin text-2xl text-gray-700"></i>`;
+                paymentStatusText.innerHTML = `<i class="fas fa-hourglass-half mr-2"></i>Membuat sesi pembayaran...`;
+
+                // Hentikan polling sebelumnya jika ada, karena kita akan memulai yang baru
+                if (pollingInterval) clearInterval(pollingInterval);
+
                 const orderIds = new Set();
                 Object.values(paymentData.items || {}).forEach(item => {
-                    // Pastikan item.orderIds adalah array atau Set
                     if (item.orderIds && typeof item.orderIds.forEach === 'function') {
                         item.orderIds.forEach(id => orderIds.add(id));
-                    } else if (Array.isArray(item.orderIds)) { // Fallback untuk jika data dari localStorage tidak berupa Set
+                    } else if (Array.isArray(item.orderIds)) {
                          item.orderIds.forEach(id => orderIds.add(id));
                     }
                 });
@@ -182,7 +115,7 @@
                 const formData = new FormData();
                 formData.append('order_ids', Array.from(orderIds).join(','));
                 formData.append('total_amount', paymentData.total);
-                formData.append('item_details', JSON.stringify(paymentData.items)); // [BARU] Kirim detail item
+                formData.append('item_details', JSON.stringify(paymentData.items));
 
                 try {
                     const token = localStorage.getItem('authToken');
@@ -193,61 +126,74 @@
                     });
 
                     if (!response.ok) {
-                        const errorData = await response.json(); // Pastikan ini ada
-                        // Gunakan detail error dari backend jika ada, jika tidak gunakan pesan default
+                        const errorData = await response.json();
                         throw new Error(errorData.detail || 'Gagal membuat sesi pembayaran.');
                     }
 
                     const data = await response.json();
                     const transactionId = data.transaction_id;
 
-                    // Buat URL untuk QR Code
                     const confirmationUrl = `${window.location.protocol}//${window.location.host}/mobile-confirm.html?tx_id=${transactionId}`;
                     
-                    // Tampilkan QR Code
                     qrcodeContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(confirmationUrl)}" alt="QRIS Code" class="mx-auto rounded-lg">`;
-
-                    // Mulai polling status
+                    paymentStatusText.innerHTML = `<i class="fas fa-hourglass-half mr-2"></i>Menunggu Pembayaran...`;
+                    
+                    // Mulai polling status untuk transaksi baru
                     startPolling(transactionId);
 
                 } catch (error) {
-                    paymentErrorEl.textContent = error.message;
+                    paymentErrorEl.textContent = `Error: ${error.message}. Coba muat ulang halaman.`;
                     paymentErrorEl.classList.remove('hidden');
                     qrcodeContainer.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>`;
+                    // Hentikan semua interval jika terjadi error fatal
+                    if (pollingInterval) clearInterval(pollingInterval);
+                    if (qrRefreshInterval) clearInterval(qrRefreshInterval);
                 }
             }
 
-            // 4. Fungsi untuk polling status
+            // 3. Fungsi untuk polling status
             function startPolling(transactionId) {
                 pollingInterval = setInterval(async () => {
                     try {
                         const response = await fetch(`${API_BASE_URL}/api/payments/status/${transactionId}`);
-                        if (!response.ok) return; // Abaikan jika ada error sementara
+                        if (!response.ok) {
+                            if (response.status === 404) handleExpiredSession();
+                            return;
+                        }
 
                         const data = await response.json();
                         if (data.status === 'LUNAS') {
-                            clearInterval(pollingInterval); // Hentikan polling
-                            paymentStatusText.innerHTML = `<i class="fas fa-check-circle text-green-500 mr-2"></i>Pembayaran Berhasil!`;
-                            paymentStatusText.classList.add('text-green-600');
-                            
-                            // Hapus data dari localStorage dan arahkan setelah beberapa detik
-                            localStorage.removeItem('paymentDetails');
-                            setTimeout(() => {
-                                alert('Pembayaran berhasil! Anda akan diarahkan ke halaman utama.');
-                                window.location.href = 'index.html';
-                            }, 1500); /* Sedikit lebih cepat */
+                            handleSuccessfulPayment();
                         } else if (data.status === 'EXPIRED') {
-                            clearInterval(pollingInterval); // Hentikan polling
-                            paymentStatusText.innerHTML = `<i class="fas fa-clock text-red-500 mr-2"></i>Waktu Pembayaran Habis`;
-                            paymentStatusText.classList.add('text-red-600');
-                            qrcodeContainer.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 text-4xl"></i>`;
-                            paymentErrorEl.textContent = 'Silakan kembali dan buat ulang pembayaran.';
-                            paymentErrorEl.classList.remove('hidden');
+                            handleExpiredSession();
                         }
                     } catch (error) {
                         console.error("Polling error:", error);
                     }
-                }, 3000); // Cek setiap 3 detik
+                }, 2000); // Cek setiap 2 detik
+            }
+
+            function handleSuccessfulPayment() {
+                clearInterval(pollingInterval);
+                clearInterval(qrRefreshInterval);
+                paymentStatusText.innerHTML = `<i class="fas fa-check-circle text-green-500 mr-2"></i>Pembayaran Berhasil!`;
+                paymentStatusText.classList.add('text-green-600');
+                
+                localStorage.removeItem('paymentDetails');
+                setTimeout(() => {
+                    alert('Pembayaran berhasil! Anda akan diarahkan ke riwayat pembayaran.');
+                    window.location.href = 'payment-history.html';
+                }, 1500);
+            }
+
+            function handleExpiredSession() {
+                clearInterval(pollingInterval);
+                clearInterval(qrRefreshInterval);
+                paymentStatusText.innerHTML = `<i class="fas fa-clock text-red-500 mr-2"></i>Waktu Pembayaran Habis`;
+                paymentStatusText.classList.add('text-red-600');
+                qrcodeContainer.innerHTML = `<div class="text-center"><i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-2"></i><p class="font-semibold">Sesi Kedaluwarsa</p></div>`;
+                paymentErrorEl.textContent = 'Silakan kembali ke halaman orderan untuk membuat pembayaran baru.';
+                paymentErrorEl.classList.remove('hidden');
             }
         });
     </script>

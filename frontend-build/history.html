@@ -219,11 +219,39 @@
         }
         
         // Function to show modal (can be called from history.js)
+        // Function to show modal (can be called from history.js)
         function showChatDetail(timestamp, userChat, botChat) {
             document.getElementById('detailTimestamp').textContent = timestamp;
-            document.getElementById('detailUserChat').textContent = userChat;
-            document.getElementById('detailBotChat').textContent = botChat;
+        
+            // Format User Chat
+            const userChatFormatted = formatChatMessage(userChat);
+            document.getElementById('detailUserChat').innerHTML = userChatFormatted;
+        
+            // Format Bot Chat
+            const botChatFormatted = formatChatMessage(botChat);
+            document.getElementById('detailBotChat').innerHTML = botChatFormatted;
+        
             modal.classList.add('show');
+        }
+        
+        function formatChatMessage(message) {
+            try {
+                // Coba parse sebagai JSON
+                const json = JSON.parse(message);
+                // Jika berhasil di-parse, format sebagai HTML list
+                let html = '<ul>';
+                for (const key in json) {
+                    if (json.hasOwnProperty(key)) {
+                        html += `<li><strong>${key}:</strong> ${json[key]}</li>`;
+                    }
+                }
+                html += '</ul>';
+                return html;
+            } catch (e) {
+                // Jika gagal parse JSON, tampilkan sebagai teks biasa dengan line breaks
+                return message.replace(/\n/g, '<br>');
+            }
+        
         }
 
         // Modal Add Order Functionality

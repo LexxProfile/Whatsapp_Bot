@@ -20,9 +20,7 @@ app = FastAPI(title="Chatbot Backend API", description="API untuk mengelola user
 
 # --- Konfigurasi CORS ---
 origins = [
-    # Menggunakan wildcard (*) untuk mengizinkan semua origin selama pengembangan.
-    # Ini akan menyelesaikan masalah "Failed to fetch" yang disebabkan oleh perubahan IP.
-    "*"
+    "http://119.28.110.17:3000"
 ]
 
 app.add_middleware(
@@ -417,9 +415,9 @@ async def get_spareparts(current_user_phone: str = Depends(get_current_user)):
         # Pastikan nama kolom di query ini sama persis dengan di DB Anda
         cursor.execute("""
             SELECT
-                `Nomor Sparepart` as part_number,
-                `Nama Sparepart` as part_name,
-                `Harga jual exc tax` as price_str  -- Ambil sebagai string
+                `nomor_sparepart` as part_number,
+                `nama_sparepart` as part_name,
+                `harga_jual_exc_tax` as price_str  -- Ambil sebagai string
             FROM sparepart_data
         """)
         spareparts_from_db = cursor.fetchall()
@@ -634,4 +632,3 @@ async def confirm_payment(transaction_id: str):
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
-# ... (endpoint lain tetap sama) ...

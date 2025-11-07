@@ -1,100 +1,74 @@
-version: '3.7' # Anda bisa menghapus baris ini jika mau, karena sudah usang
-
 services:
-  # Service untuk Message Queue (Pusat Logistik)
-  queue: # <-- Diganti dari rabbitmq
+  # Service A: Message Queue (Pusat Logistik)
+  queue: 
     image: rabbitmq:3-management
     restart: always
     ports:
-      # Port untuk Dashboard -> Akses di http://localhost:15673
-      - "15673:15672"
-      # Port untuk komunikasi antar service
-      - "5673:5672"
-
-  # Service #1: Penerima Pesan (Resepsionis)
-  penerima: # <-- Diganti dari n8n-ingress
-    image: n8nio/n8n
-    restart: always
-    ports:
-      # Port untuk Webhook dari luar -> Akses di http://localhost:5678
-      - "5678:5678" # <-- DIKEMBALIKAN KE 5678
-    volumes:
-      - ./n8n-ingress-data:/home/node/.n8n
-    environment:
-      TZ: Asia/Jakarta
-      # --- VARIABEL DIKEMBALIKAN KE SINI KARENA MENANGANI PORT 5678 ---
-      N8N_HOST: 119.28.110.17
-      N8N_PORT: 5678
-      N8N_PROTOCOL: http
+      - "15673:15672" # Dashboard
+      - "5673:5672"   # Komunikasi internal
+    # TIDAK ADA depends_on (dimulai duluan)
 
   # Service #2: Prosesor Data & AI (Dapur Utama)
-  process: # <-- Diganti dari n8n-processor
+  process:
     image: n8nio/n8n
     restart: always
     ports:
-      # Port SEMENTARA untuk konfigurasi -> Akses di http://localhost:5679
-      - "5679:5678" # <-- DIKEMBALIKAN KE 5679
+      - "5678:5678" # Port utama: Webhook, UI, dan Google OAuth
     volumes:
       - ./n8n-processor-data:/home/node/.n8n
     environment:
       TZ: Asia/Jakarta
-      # Variabel N8N dihapus dari sini
+      N8N_HOST: 119.28.110.17
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_SECURE_COOKIE: "false" # Matikan cookie securit
+      DB_SQLITE_POOL_SIZE: "5"
+      N8N_RUNNERS_ENABLED: "true"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      N8N_GIT_NODE_DISABLE_BARE_REPOS: "true"
+      N8N_WEBHOOK_URL: http://119.28.110.17:5678
+    depends_on:
+      - db
+      - backend
+      
 
-  # Service #3: Pengirim Pesan (Area Pengiriman)
-  pengirim: # <-- Diganti dari n8n-dispatch
-    image: n8nio/n8n
-    restart: always
-    ports:
-      # Port SEMENTARA untuk konfigurasi -> Akses di http://localhost:5680
-      - "5680:5678"
-    volumes:
-      - ./n8n-dispatch-data:/home/node/.n8n
-    environment:
-      TZ: Asia/Jakarta
-
-  # Service #4: Frontend Web (Restoran) ⬅️ BARU
+  # Service #4: Frontend Web (Restoran)
   frontend:
-    image: nginx:alpine  # Menggunakan image nginx ringan
+    image: nginx:alpine
     restart: always
     ports:
-      # Port untuk mengakses web -> Akses di http://localhost:3000
-      - "3000:80"
+      - "3000:80" # Akses web publik
     volumes:
-      # Menghubungkan folder build Anda ke folder web root di nginx
-      # Pastikan Anda punya folder 'frontend-build' di direktori yang sama
       - ./frontend-build:/usr/share/nginx/html
+    depends_on:
+      - backend
 
-  # Service #5: Database MySQL (Penyimpanan Data) ⬅️ BARU
+  # Service #5: Database MySQL (Penyimpanan Data)
   db:
-    image: mysql:8.0  # Menggunakan image MySQL versi 8.0
+    image: mysql:8.0
     restart: always
-    command: --default-time-zone='+07:00' # Menetapkan timezone server MySQL ke WIB (UTC+7)
+    command: --default-time-zone='+07:00'
     environment:
-      MYSQL_ROOT_PASSWORD: root # Ganti ini!
-      MYSQL_DATABASE: chatbot_history # Nama database yang akan dibuat
-      MYSQL_USER: user_n8n # Nama user untuk n8n/backend Anda
-      MYSQL_PASSWORD: root # Ganti ini!
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: chatbot_history
+      MYSQL_USER: Alex
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      # Menyimpan data database secara permanen di folder mysql-data
       - ./mysql-data:/var/lib/mysql
-    ports: # Opsional: Buka port jika ingin akses dari luar kontainer (misal: pakai DBeaver)
+    ports:
       - "3306:3306"
-
-  # ... (service queue, penerima, process, pengirim, frontend, db tetap sama) ...
 
   # Service #6: Backend API (Manajer Toko)
   backend:
-    build: ./backend # Menunjuk ke folder 'backend' tempat Dockerfile Anda
+    build: ./backend
     restart: always
     ports:
-      # Port untuk API -> Frontend akan memanggil http://localhost:8000
       - "8000:8000"
     environment:
-      # Variabel untuk koneksi ke database & JWT Secret
       DATABASE_HOST: db
-      DATABASE_USER: user_n8n
-      DATABASE_PASSWORD: root # <-- Ganti dengan password kuat & gunakan secrets!
+      DATABASE_USER: Alex
+      DATABASE_PASSWORD: ${MYSQL_PASSWORD}
       DATABASE_NAME: chatbot_history
-      JWT_SECRET: AD8622 # <-- Ganti & gunakan secrets!
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
-      - db # Pastikan DB siap sebelum backend dimulai
+      - db
