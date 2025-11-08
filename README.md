@@ -2,12 +2,15 @@ Judul :Endless Project
 Deskripsi :
   Penggunaan N8N untuk automasi pesan whatsapp 
   ketika user input pn sparepart maka informasi dari sparepart tersebut akan muncul 
+
 Daftar Anggota Machine Learning 
+
 1.Alex Ander Wijaya 221110286
 2.Delwin 221110202
 3.Frederick Liko 
 
 Daftar Anggota Devops
+
 1.Alex Ander Wijaya 221110286
 2.Delwin 221110202
 
