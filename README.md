@@ -30,6 +30,11 @@ Coming soon
 - setelah pembayaran user akan dapat notif 
 - chat user tidak hanya part number 
 
+Link Video 
+
+https://teams.microsoft.com/l/meetingrecap?driveId=b%21OEXqp4kQKkmZm377Pr9s1U_B_rFLGdBOgC2uZwOXaNjOl9_lSe4JSoR1XUB_dC62&driveItemId=01NJIY5VA5P6VCW57CCZA2KDESQVMZJSOW&sitePath=https%3A%2F%2Fmikroskilacid-my.sharepoint.com%2F%3Av%3A%2Fg%2Fpersonal%2F221110286_students_mikroskil_ac_id%2FER1_qit34hZBpQyShVmUydYBsUUBuPnJ5GCHLbNUXaDE1g&fileUrl=https%3A%2F%2Fmikroskilacid-my.sharepoint.com%2Fpersonal%2F221110286_students_mikroskil_ac_id%2FDocuments%2FNotebooks%2FRecordings%2FTugas%2520Kelompok%2520Machine%2520Learning%2520%2526%2520Devops-20251108_163313-Meeting%2520Recording.mp4%3Fweb%3D1&threadId=19%3Ameeting_NzQ0N2QyZGItMWQ1My00YTk0LWE3NWEtZTczODZjMjIzMDMx%40thread.v2&organizerId=5acaf969-9d13-479d-b041-009d539ecc64&tenantId=6f1860b6-24dc-4335-94c7-6ad22b042731&callId=e698c19b-2467-41da-803f-b26ca30054d7&threadType=Meeting&meetingType=MeetNow&subType=RecapSharingLink_RecapCore
+
+
 
 
 
