@@ -7,7 +7,7 @@ Daftar Anggota Machine Learning
 
 1.Alex Ander Wijaya 221110286
 2.Delwin 221110202
-3.Frederick Liko 
+3.Frederick Liko 221113801
 
 Daftar Anggota Devops
 
