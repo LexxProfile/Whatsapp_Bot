@@ -31,6 +31,7 @@ Coming soon
 - chat user tidak hanya part number 
 
 Link Video 
+
 https://mikroskilacid-my.sharepoint.com/:v:/g/personal/221110286_students_mikroskil_ac_id/ER1_qit34hZBpQyShVmUydYBLboajpFxQz6tcnrTkqYA9w?e=QjMM9s
 
 
