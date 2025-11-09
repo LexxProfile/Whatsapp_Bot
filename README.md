@@ -34,11 +34,16 @@ Coming soon
 - chat user tidak hanya part number 
 
 
-hallo test 
 Link Video 
 
 https://mikroskilacid-my.sharepoint.com/:v:/g/personal/221110286_students_mikroskil_ac_id/ER1_qit34hZBpQyShVmUydYBLboajpFxQz6tcnrTkqYA9w?e=QjMM9s
 
+
+Link Video Testing CI/CD
+https://mikroskilacid-my.sharepoint.com/:v:/g/personal/221110286_students_mikroskil_ac_id/EagAu8J5zOBInF_hHAs81bABa3GWlmJ8Mc0v2SVriSoYsQ?e=wqVbdU&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D
+
+Link Video Build N Run Container 
+https://mikroskilacid-my.sharepoint.com/:v:/g/personal/221110286_students_mikroskil_ac_id/Ee2fZUT28rVJrXzslrHLqeoBWeTimDE4ZEWrOvj7zHaDOg?e=chseKX&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D
 
 
 
