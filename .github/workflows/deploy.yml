@@ -1,49 +1,40 @@
-# Nama workflow Anda
 name: Deploy to VPS
 
-# Kapan workflow ini berjalan:
-# Hanya saat Anda melakukan 'push' ke branch 'master'
 on:
   push:
     branches: [ master ]
 
 jobs:
-  # Nama job-nya (bisa apa saja)
   deploy:
-    # Menggunakan server Ubuntu terbaru dari GitHub
     runs-on: ubuntu-latest
+    environment: VPS_HOST   # ⬅️ Tambahkan baris ini agar bisa akses secrets
 
     steps:
-    # Langkah 1: Mengunduh kode Anda dari GitHub ke server 'runner' GitHub
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # Langkah 2 (CI Sederhana): Memvalidasi file docker-compose.yml
     - name: Validate Docker Compose
       run: docker compose -f docker-compose.yml config
-    
-    # Langkah 3 (CI Sederhana): Memeriksa sintaks Python di folder backend
+
     - name: Install Python and dependencies
       uses: actions/setup-python@v5
       with:
-        python-version: '3.9' # Sesuaikan dengan versi Python Anda
-    - name: Lint with Flake8 (opsional)
+        python-version: '3.9'
+
+    - name: Lint with Flake8
       run: |
         pip install flake8
         flake8 backend/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        
-    # Langkah 4 (CD): Login ke VPS Anda dan jalankan perintah
+
     - name: Deploy to VPS via SSH
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.119.28.110.17 }}          # IP VPS Anda
-        username: ${{ secrets.root }}    # Username SSH (misal: root)
-        key: ${{ secrets.Alex123! }}   # Kunci SSH privat Anda
-        
-        # Perintah yang akan dijalankan di VPS Anda
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
         script: |
-          cd ~/Whatsapp_Bot  # Masuk ke folder proyek di VPS Anda
-          git pull origin master   # Ambil kode terbaru dari GitHub
-          docker-compose build backend # Bangun ulang image backend
-          docker-compose up -d --remove-orphans # Restart semua kontainer
-          echo "Deployment finished successfully!"
+          cd ~/Whatsapp_Bot
+          git pull origin master
+          docker-compose build backend
+          docker-compose up -d --remove-orphans
+          echo "✅ Deployment finished successfully!"
