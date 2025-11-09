@@ -1,49 +1,34 @@
 services:
-  # Service A: Message Queue (Pusat Logistik)
-  queue: 
-    image: rabbitmq:3-management
-    restart: always
-    ports:
-      - "15673:15672" # Dashboard
-      - "5673:5672"   # Komunikasi internal
-    # TIDAK ADA depends_on (dimulai duluan)
 
-  # Service #2: Prosesor Data & AI (Dapur Utama)
   process:
     image: n8nio/n8n
     restart: always
     ports:
-      - "5678:5678" # Port utama: Webhook, UI, dan Google OAuth
+      - "5678:5678" 
     volumes:
       - ./n8n-processor-data:/home/node/.n8n
     environment:
       TZ: Asia/Jakarta
-      N8N_HOST: 119.28.110.17
-      N8N_PORT: 5678
-      N8N_PROTOCOL: http
-      N8N_SECURE_COOKIE: "false" # Matikan cookie securit
+      N8N_SECURE_COOKIE: "false"
       DB_SQLITE_POOL_SIZE: "5"
       N8N_RUNNERS_ENABLED: "true"
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       N8N_GIT_NODE_DISABLE_BARE_REPOS: "true"
-      N8N_WEBHOOK_URL: http://119.28.110.17:5678
+      N8N_WEBHOOK_URL: ${NGROK_URL} # <-- PERUBAHAN PALING PENTING
     depends_on:
       - db
       - backend
-      
 
-  # Service #4: Frontend Web (Restoran)
   frontend:
     image: nginx:alpine
     restart: always
     ports:
-      - "3000:80" # Akses web publik
+      - "3000:80"
     volumes:
       - ./frontend-build:/usr/share/nginx/html
     depends_on:
       - backend
 
-  # Service #5: Database MySQL (Penyimpanan Data)
   db:
     image: mysql:8.0
     restart: always
@@ -58,7 +43,6 @@ services:
     ports:
       - "3306:3306"
 
-  # Service #6: Backend API (Manajer Toko)
   backend:
     build: ./backend
     restart: always
@@ -72,3 +56,14 @@ services:
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
       - db
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: always
+    ports:
+      - "4040:4040" # Untuk mengakses dashboard ngrok di http://localhost:4040
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    command: http process:5678
+    depends_on:
+      - process # Pastikan n8n sudah berjalan sebelum ngrok dimulai
