@@ -43,19 +43,7 @@ services:
     ports:
       - "3306:3306"
 
-  backend:
-    build: ./backend
-    restart: always
-    ports:
-      - "8000:8000"
-    environment:
-      DATABASE_HOST: db
-      DATABASE_USER: Alex
-      DATABASE_PASSWORD: ${MYSQL_PASSWORD}
-      DATABASE_NAME: chatbot_history
-      JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      - db
+
 
   ngrok:
     image: ngrok/ngrok:latest
