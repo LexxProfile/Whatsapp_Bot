@@ -4,51 +4,63 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorMessage = document.getElementById('errorMessage');
     const successMessage = document.getElementById('successMessage');
 
-    // --- BASE URL API BACKEND ANDA ---
-    // Pastikan backend Anda berjalan dan bisa diakses
-    // Membuat URL API dinamis. Ini akan berfungsi di localhost dan saat diakses dari luar.
-    //const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
-    // Gunakan path relatif, browser otomatis akan pakai domain dan https yang sama
-    const API_BASE_URL = '';
+    // URL API (Relatif)
+    const API_BASE_URL = ''; 
+
+    // --- FUNGSI BANTUAN: NORMALISASI NOMOR TELEPON ---
+    // Mengubah format '08...' menjadi '628...'
+    // Jika sudah '62...', biarkan apa adanya.
+    // Juga membersihkan karakter non-angka (spasi, -, dll)
+    function normalizePhoneNumber(phone) {
+        // 1. Hapus karakter selain angka
+        let cleanPhone = phone.replace(/\D/g, '');
+
+        // 2. Cek awalan
+        if (cleanPhone.startsWith('0')) {
+            // Ganti '0' di depan dengan '62'
+            cleanPhone = '62' + cleanPhone.substring(1);
+        }
+        // Jika sudah dimulai dengan '62', biarkan saja
+        
+        return cleanPhone;
+    }
+
     // --- LOGIN HANDLER ---
     if (loginForm) {
         loginForm.addEventListener('submit', async function(event) {
-            event.preventDefault(); // Mencegah reload halaman
+            event.preventDefault(); 
             hideMessages();
 
-            const phone = document.getElementById('phone').value;
+            let phone = document.getElementById('phone').value;
             const password = document.getElementById('password').value;
+
+            // [NEW] Normalisasi nomor telepon sebelum dikirim
+            phone = normalizePhoneNumber(phone);
+            console.log("Nomor HP dinormalisasi (Login):", phone); // Debugging
 
             try {
                 const response = await fetch(`${API_BASE_URL}/api/login`, {
                     method: 'POST',
-                    // Backend sekarang mengharapkan JSON, bukan form-data.
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    // Kirim data sebagai string JSON yang cocok dengan model Pydantic UserLogin di backend
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone_number: phone, password: password })
                 });
 
                 if (!response.ok) {
-                    // Coba baca detail error dari body response
                     try {
                         const errorData = await response.json();
-                        // Lemparkan error dengan pesan dari backend
                         throw new Error(errorData.detail || `Login gagal (Status: ${response.status})`);
                     } catch (e) {
-                        // Jika body bukan JSON atau kosong, lemparkan error umum
-                        throw new Error(`Login gagal. Server merespon dengan status: ${response.status}`);
+                        // Jika error saat parsing JSON, lemparkan error asli jika ada pesan
+                        throw new Error(e.message || `Login gagal. Server merespon dengan status: ${response.status}`);
                     }
                 }
 
                 const data = await response.json();
-                // Login berhasil, simpan token (jika backend mengirim token)
                 if (data.access_token) {
                     localStorage.setItem('authToken', data.access_token);
-                    window.location.href = 'index.html'; // Arahkan kembali ke halaman utama
+                    window.location.href = 'index.html';
                 } else {
-                    showError('Token tidak diterima dari server.');
+                     showError('Token tidak diterima dari server.');
                 }
 
             } catch (error) {
@@ -64,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
             hideMessages();
 
-            const phone = document.getElementById('phone').value;
+            let phone = document.getElementById('phone').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
 
@@ -72,6 +84,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 showError('Password dan Konfirmasi Password tidak cocok.');
                 return;
             }
+
+            // [NEW] Normalisasi nomor telepon sebelum dikirim
+            phone = normalizePhoneNumber(phone);
+            console.log("Nomor HP dinormalisasi (Register):", phone); // Debugging
 
             try {
                 const response = await fetch(`${API_BASE_URL}/api/register`, {
@@ -85,15 +101,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         const errorData = await response.json();
                         throw new Error(errorData.detail || `Registrasi gagal (Status: ${response.status})`);
                     } catch (e) {
-                        throw new Error(`Registrasi gagal. Server merespon dengan status: ${response.status}`);
+                         throw new Error(e.message || `Registrasi gagal. Server merespon dengan status: ${response.status}`);
                     }
                 }
 
-                // Baca data hanya jika response.ok
-                const data = await response.json();
-                // Registrasi berhasil
+                // Jika sukses (201 Created), biasanya tidak ada body atau body minimal
+                // Tapi kita coba baca json untuk memastikan
+                try {
+                     await response.json(); 
+                } catch (e) { /* Abaikan jika body kosong */ }
+
                 showSuccess('Registrasi berhasil! Silakan login.');
-                registerForm.reset(); // Kosongkan form
+                registerForm.reset(); 
 
             } catch (error) {
                 console.error('Register Error:', error);
@@ -102,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- Fungsi Bantuan Tampilkan Pesan ---
+    // --- Fungsi Bantuan UI ---
     function showError(message) {
         if (errorMessage) {
             errorMessage.textContent = message;
@@ -121,5 +140,4 @@ document.addEventListener('DOMContentLoaded', function() {
         if (errorMessage) errorMessage.classList.add('hidden');
         if (successMessage) successMessage.classList.add('hidden');
     }
-
 });
