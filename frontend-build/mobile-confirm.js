@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const loadingState = document.getElementById('loading-state');
     const mainContent = document.getElementById('main-content');
-    const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
-
+    // const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+    const API_BASE_URL = '';
     // 1. Ambil transaction_id dari URL
     const urlParams = new URLSearchParams(window.location.search);
     const transactionId = urlParams.get('tx_id');

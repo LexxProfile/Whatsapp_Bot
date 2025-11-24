@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const historyList = document.getElementById('historyList');
     const loadingState = document.getElementById('loading-state');
     const emptyState = document.getElementById('empty-state');
-    const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+    //const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+    const API_BASE_URL = '';
     const token = localStorage.getItem('authToken');
     const filterButtons = document.querySelectorAll('.filter-btn');
     

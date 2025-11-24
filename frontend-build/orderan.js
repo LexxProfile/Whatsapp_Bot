@@ -5,8 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadingRow = document.getElementById('loading-row');
     const grandTotalSection = document.getElementById('grand-total-section');
     const confirmPaymentBtn = document.getElementById('confirmPaymentBtn'); // Tambahkan referensi tombol baru
-    const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
-    
+    //const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+    // Gunakan path relatif, browser otomatis akan pakai domain dan https yang sama
+    const API_BASE_URL = '';
     const token = localStorage.getItem('authToken');
 
     // Variabel untuk menyimpan data

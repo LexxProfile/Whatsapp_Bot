@@ -7,8 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- BASE URL API BACKEND ANDA ---
     // Pastikan backend Anda berjalan dan bisa diakses
     // Membuat URL API dinamis. Ini akan berfungsi di localhost dan saat diakses dari luar.
-    const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
-
+    //const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+    // Gunakan path relatif, browser otomatis akan pakai domain dan https yang sama
+    const API_BASE_URL = '';
     // --- LOGIN HANDLER ---
     if (loginForm) {
         loginForm.addEventListener('submit', async function(event) {

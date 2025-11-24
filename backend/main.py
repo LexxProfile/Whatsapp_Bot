@@ -21,6 +21,8 @@ app = FastAPI(title="Chatbot Backend API", description="API untuk mengelola user
 # --- Konfigurasi CORS ---
 origins = [
     "http://119.28.110.17:3000"
+    "http://endlessproject.my.id",   # Tambahkan ini
+    "https://endlessproject.my.id"
 ]
 
 app.add_middleware(

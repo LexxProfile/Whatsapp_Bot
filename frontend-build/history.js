@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const historyList = document.getElementById('historyList');
     const searchInput = document.getElementById('searchInput'); // New: Search input
     // Membuat URL API dinamis. Ini akan berfungsi di localhost dan saat diakses dari luar.
-    const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
-    
+    //const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+    const API_BASE_URL = '';
     // Ambil token dari localStorage
     const token = localStorage.getItem('authToken');
     let allChatHistoryData = []; // New: Store all fetched data
