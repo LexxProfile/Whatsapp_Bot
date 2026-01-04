@@ -4,79 +4,87 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorMessage = document.getElementById('errorMessage');
     const successMessage = document.getElementById('successMessage');
 
-    // URL API (Relatif)
-    const API_BASE_URL = ''; 
+    const API_BASE_URL = '';
 
-    // --- FUNGSI BANTUAN: NORMALISASI NOMOR TELEPON ---
-    // Mengubah format '08...' menjadi '628...'
-    // Jika sudah '62...', biarkan apa adanya.
-    // Juga membersihkan karakter non-angka (spasi, -, dll)
     function normalizePhoneNumber(phone) {
-        // 1. Hapus karakter selain angka
         let cleanPhone = phone.replace(/\D/g, '');
-
-        // 2. Cek awalan
         if (cleanPhone.startsWith('0')) {
-            // Ganti '0' di depan dengan '62'
             cleanPhone = '62' + cleanPhone.substring(1);
         }
-        // Jika sudah dimulai dengan '62', biarkan saja
-        
         return cleanPhone;
     }
 
-    // --- LOGIN HANDLER ---
-    if (loginForm) {
-        loginForm.addEventListener('submit', async function(event) {
-            event.preventDefault(); 
-            hideMessages();
+    /* ================= LOGIN ================= */
+    loginForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideError();
 
-            let phone = document.getElementById('phone').value;
-            const password = document.getElementById('password').value;
+    let phone = document.getElementById('phoneNumber').value;
+    const password = document.getElementById('password').value;
 
-            // [NEW] Normalisasi nomor telepon sebelum dikirim
-            phone = normalizePhoneNumber(phone);
-            console.log("Nomor HP dinormalisasi (Login):", phone); // Debugging
+    phone = normalizePhoneNumber(phone);
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone_number: phone, password: password })
-                });
-
-                if (!response.ok) {
-                    try {
-                        const errorData = await response.json();
-                        throw new Error(errorData.detail || `Login gagal (Status: ${response.status})`);
-                    } catch (e) {
-                        // Jika error saat parsing JSON, lemparkan error asli jika ada pesan
-                        throw new Error(e.message || `Login gagal. Server merespon dengan status: ${response.status}`);
-                    }
-                }
-
-                const data = await response.json();
-                if (data.access_token) {
-                    localStorage.setItem('authToken', data.access_token);
-                    window.location.href = 'index.html';
-                } else {
-                     showError('Token tidak diterima dari server.');
-                }
-
-            } catch (error) {
-                console.error('Login Error:', error);
-                showError(error.message);
-            }
-        });
+    if (!/^62\d{9,13}$/.test(phone)) {
+        showError('Nomor WhatsApp tidak valid.');
+        return;
     }
 
-    // --- REGISTER HANDLER ---
+    // ✅ AMBIL DARI CALLBACK
+    if (!window.captchaToken) {
+        showError('Silakan selesaikan CAPTCHA terlebih dahulu.');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                phone_number: phone,
+                password: password,
+                captcha_token: window.captchaToken
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.detail || 'Login gagal.');
+        }
+
+        if (data.status === 'pending') {
+            showError('Akun Anda masih menunggu persetujuan admin.');
+            return;
+        }
+
+        if (data.status === 'blocked') {
+            showError('Akun Anda diblokir. Hubungi admin.');
+            return;
+        }
+
+        if (data.access_token) {
+            localStorage.setItem('authToken', data.access_token);
+            window.location.href = 'index.html';
+        } else {
+            showError('Token tidak diterima dari server.');
+        }
+
+    } catch (err) {
+        showError(err.message);
+    } finally {
+        // 🔁 RESET TOKEN (Turnstile sekali pakai)
+        window.captchaToken = null;
+    }
+});
+
+
+    /* ================= REGISTER ================= */
     if (registerForm) {
         registerForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             hideMessages();
 
-            let phone = document.getElementById('phone').value;
+            let phone = document.getElementById('phoneNumber').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
 
@@ -85,43 +93,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // [NEW] Normalisasi nomor telepon sebelum dikirim
             phone = normalizePhoneNumber(phone);
-            console.log("Nomor HP dinormalisasi (Register):", phone); // Debugging
+
+            if (!/^62\d{9,13}$/.test(phone)) {
+                showError('Nomor WhatsApp tidak valid.');
+                return;
+            }
+
+            /* 🔴 INI WAJIB: captchaToken dari register.html */
+            if (!window.captchaToken) {
+                showError('Silakan selesaikan CAPTCHA terlebih dahulu.');
+                return;
+            }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/register`, {
+                const response = await fetch(`${API_BASE_URL}/api/register-request`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone_number: phone, password: password })
+                    body: JSON.stringify({
+                        phone_number: phone,
+                        password: password,
+                        captcha_token: window.captchaToken
+                    })
                 });
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    try {
-                        const errorData = await response.json();
-                        throw new Error(errorData.detail || `Registrasi gagal (Status: ${response.status})`);
-                    } catch (e) {
-                         throw new Error(e.message || `Registrasi gagal. Server merespon dengan status: ${response.status}`);
-                    }
+                    throw new Error(data.detail || 'Registrasi gagal.');
                 }
 
-                // Jika sukses (201 Created), biasanya tidak ada body atau body minimal
-                // Tapi kita coba baca json untuk memastikan
-                try {
-                     await response.json(); 
-                } catch (e) { /* Abaikan jika body kosong */ }
+                showSuccess(
+                    'Permintaan pendaftaran berhasil dikirim. ' +
+                    'Menunggu persetujuan admin melalui WhatsApp.'
+                );
 
-                showSuccess('Registrasi berhasil! Silakan login.');
-                registerForm.reset(); 
+                registerForm.reset();
 
             } catch (error) {
-                console.error('Register Error:', error);
                 showError(error.message);
             }
         });
     }
 
-    // --- Fungsi Bantuan UI ---
+    /* ================= UI ================= */
     function showError(message) {
         if (errorMessage) {
             errorMessage.textContent = message;
@@ -129,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-     function showSuccess(message) {
+    function showSuccess(message) {
         if (successMessage) {
             successMessage.textContent = message;
             successMessage.classList.remove('hidden');

@@ -4,98 +4,221 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Endless Project</title>
+
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- ✅ TURNSTILE CALLBACK (HARUS DI ATAS) -->
+    <script>
+        window.captchaToken = null;
+
+        window.onTurnstileSuccess = function (token) {
+            window.captchaToken = token;
+            console.log("Turnstile token diterima:", token);
+        };
+    </script>
+
+    <!-- ✅ LOAD TURNSTILE (HANYA SEKALI) -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+    <!-- Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Style (TIDAK DIUBAH) -->
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
         .liquid-glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(30px);
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
-        .liquid-glass-hover { transition: all 0.3s ease; }
-        .liquid-glass-hover:hover {
-            background: rgba(255, 255, 255, 0.9);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        .bg-image {
+            background-image: url('background/login.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
-        .gradient-bg {
-            background-color: #f0f2f5;
-            min-height: 100vh;
+        .glass-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            transition: all 0.3s ease;
         }
-        /* Style tambahan untuk input */
-        input[type="tel"], input[type="password"] {
-            background: rgba(229, 231, 235, 0.5); /* bg-gray-200/50 */
-            border: 1px solid rgba(209, 213, 219, 0.7); /* border-gray-300/70 */
+        .glass-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
         }
-         input[type="tel"]:focus, input[type="password"]:focus {
-             background: rgba(229, 231, 235, 0.7);
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
-<body class="h-full">
-    <main class="gradient-bg flex items-center justify-center min-h-screen px-4">
-        <div class="liquid-glass rounded-3xl p-8 md:p-12 w-full max-w-md">
-            <h2 class="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-8">
-                <i class="fas fa-user-plus mr-3 text-blue-600"></i>Daftar Akun Baru
-            </h2>
 
-            <form id="registerForm" class="space-y-6">
-                <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
-                            <i class="fas fa-phone"></i>
-                        </span>
-                        <input type="tel" id="phone" name="phone" required
-                               class="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-500 text-gray-800"
-                               placeholder="Contoh: 6281234567890">
-                    </div>
-                </div>
+<body class="h-full bg-image flex items-center justify-center p-4">
 
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <div class="relative">
-                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
-                            <i class="fas fa-lock"></i>
-                        </span>
-                        <input type="password" id="password" name="password" required
-                               class="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-500 text-gray-800"
-                               placeholder="Buat password Anda">
-                    </div>
-                </div>
+<div class="liquid-glass rounded-3xl p-8 w-full max-w-md">
 
-                <div>
-                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password</label>
-                     <div class="relative">
-                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
-                            <i class="fas fa-check-circle"></i>
-                        </span>
-                        <input type="password" id="confirmPassword" name="confirmPassword" required
-                               class="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-500 text-gray-800"
-                               placeholder="Ulangi password Anda">
-                    </div>
-                </div>
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">Buat Akun</h1>
+        <p class="text-white/80">Bergabunglah dengan Endless Project</p>
+    </div>
 
-                <div>
-                    <button type="submit"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-3 font-semibold transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        Daftar
-                    </button>
-                </div>
-            </form>
+    <form id="registerForm" class="space-y-5">
 
-            <p class="text-center mt-6 text-sm text-gray-700">
-                Sudah punya akun?
-                <a href="login.html" class="font-medium text-blue-600 hover:text-blue-500">
-                    Login di sini
-                </a>
-            </p>
-             <p id="errorMessage" class="text-center mt-4 text-red-600 text-sm font-medium hidden"></p>
-             <p id="successMessage" class="text-center mt-4 text-green-600 text-sm font-medium hidden"></p>
+        <div>
+            <label class="block text-white text-sm font-bold mb-2">Nama Lengkap</label>
+            <div class="relative">
+                <span class="absolute left-4 top-3.5 text-white/60"><i class="fas fa-user"></i></span>
+                <input type="text" id="fullName"
+                       class="glass-input w-full rounded-xl py-3 pl-10 pr-4"
+                       placeholder="Nama Anda" required>
+            </div>
         </div>
-    </main>
 
-    <script src="auth.js"></script> </body>
+        <div>
+            <label class="block text-white text-sm font-bold mb-2">Nomor WhatsApp</label>
+            <div class="relative">
+                <span class="absolute left-4 top-3.5 text-white/60"><i class="fas fa-phone"></i></span>
+                <input type="text" id="phoneNumber"
+                       class="glass-input w-full rounded-xl py-3 pl-10 pr-4"
+                       placeholder="08xxxxxxxxxx" required>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-white text-sm font-bold mb-2">Password</label>
+            <div class="relative">
+                <span class="absolute left-4 top-3.5 text-white/60"><i class="fas fa-lock"></i></span>
+                <input type="password" id="password"
+                       class="glass-input w-full rounded-xl py-3 pl-10 pr-4"
+                       placeholder="••••••••" required>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-white text-sm font-bold mb-2">Konfirmasi Password</label>
+            <div class="relative">
+                <span class="absolute left-4 top-3.5 text-white/60"><i class="fas fa-check-circle"></i></span>
+                <input type="password" id="confirmPassword"
+                       class="glass-input w-full rounded-xl py-3 pl-10 pr-4"
+                       placeholder="••••••••" required>
+            </div>
+        </div>
+
+        <!-- ✅ CAPTCHA (CALLBACK AKTIF) -->
+        <div class="flex justify-center">
+            <div class="cf-turnstile"
+                 data-sitekey="0x4AAAAAACHMnsUfcqFy4Qot"
+                 data-callback="onTurnstileSuccess">
+            </div>
+        </div>
+
+        <button type="submit"
+                class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold rounded-xl py-3 transition-colors shadow-lg">
+            Daftar
+        </button>
+    </form>
+
+    <div class="mt-8 text-center text-white/80 text-sm">
+        <p>Sudah punya akun?
+            <a href="login.html" class="font-bold text-white hover:underline">Login disini</a>
+        </p>
+    </div>
+
+    <p id="errorMessage" class="text-center mt-4 text-red-500 text-sm font-medium hidden"></p>
+    <p id="successMessage" class="text-center mt-4 text-green-400 text-sm font-medium hidden"></p>
+</div>
+
+<!-- ================= REGISTER SCRIPT ================= -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const registerForm = document.getElementById('registerForm');
+    const errorMessage = document.getElementById('errorMessage');
+    const successMessage = document.getElementById('successMessage');
+    const API_BASE_URL = '';
+
+    function normalizePhoneNumber(phone) {
+        let clean = phone.replace(/\D/g, '');
+        if (clean.startsWith('0')) clean = '62' + clean.slice(1);
+        return clean;
+    }
+
+    function showError(msg) {
+        errorMessage.textContent = msg;
+        errorMessage.classList.remove('hidden');
+    }
+
+    function showSuccess(msg) {
+        successMessage.textContent = msg;
+        successMessage.classList.remove('hidden');
+    }
+
+    function hideMessages() {
+        errorMessage.classList.add('hidden');
+        successMessage.classList.add('hidden');
+    }
+
+    registerForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        hideMessages();
+
+        let phone = document.getElementById('phoneNumber').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (password !== confirmPassword) {
+            showError('Password dan konfirmasi password tidak cocok.');
+            return;
+        }
+
+        phone = normalizePhoneNumber(phone);
+
+        if (!/^62\d{9,13}$/.test(phone)) {
+            showError('Nomor WhatsApp tidak valid.');
+            return;
+        }
+
+        if (!window.captchaToken) {
+            showError('Silakan selesaikan CAPTCHA terlebih dahulu.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/register-request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone_number: phone,
+                    password: password,
+                    captcha_token: window.captchaToken
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.detail || 'Registrasi gagal.');
+            }
+
+            showSuccess(
+                'Permintaan pendaftaran berhasil dikirim. ' +
+                'Menunggu persetujuan admin via WhatsApp.'
+            );
+
+            registerForm.reset();
+            window.captchaToken = null;
+
+        } catch (err) {
+            showError(err.message);
+        }
+    });
+});
+</script>
+
+</body>
 </html>

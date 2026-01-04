@@ -1,82 +1,185 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Pembayaran - Endless Project</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; }
-        .liquid-glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(30px);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        .gradient-bg {
-            background-color: #f0f2f5;
-            min-height: 100vh;
-        }
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-        .status-lunas { background-color: #10B981; color: white; }
-        .status-pending { background-color: #F59E0B; color: white; }
-        .detail-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease-in-out;
-        }
-        .filter-btn.selected {
-            background: rgba(0, 0, 0, 0.1);
-            font-weight: 600;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riwayat Pembayaran - Endless Project</title>
+
+<!-- FONT & ICON -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<!-- TAILWIND (CONTENT ONLY) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+:root{
+  --bg:#f9fafb;
+  --card:#ffffff;
+  --border:#e5e7eb;
+  --text:#111827;
+  --muted:#6b7280;
+  --accent:#2563eb;
+  --danger:#dc2626;
+  --success:#10b981;
+  --warning:#f59e0b;
+  --shadow:0 8px 24px rgba(0,0,0,.06);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.app{display:flex;min-height:100vh}
+
+/* ===== MAIN ===== */
+.main{
+  margin-left:260px;
+  padding:24px 32px;
+  width:100%;
+}
+
+/* ===== HEADER ===== */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:32px;
+}
+
+/* ===== HAMBURGER ===== */
+.hamburger{
+  display:none;
+  font-size:22px;
+  cursor:pointer;
+}
+
+/* ===== OVERLAY ===== */
+.overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+  z-index:40;
+}
+
+/* ===== CARD ===== */
+.card{
+  background:var(--card);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+  padding:24px;
+  margin-bottom:24px;
+}
+
+/* ===== FILTER ===== */
+.filter-btn{
+  background:#f3f4f6;
+  color:var(--muted);
+  padding:8px 16px;
+  border-radius:9999px;
+  font-weight:500;
+  border:none;
+  cursor:pointer;
+  transition:.2s;
+}
+.filter-btn:hover{background:#e5e7eb}
+.filter-btn.selected{
+  background:var(--accent);
+  color:white;
+  font-weight:600;
+}
+
+/* ===== STATUS BADGE ===== */
+.status-badge{
+  padding:4px 12px;
+  border-radius:9999px;
+  font-size:12px;
+  font-weight:600;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.status-lunas{background:rgba(16,185,129,.1);color:var(--success)}
+.status-proses{background:rgba(245,158,11,.1);color:var(--warning)}
+.status-gagal{background:rgba(220,38,38,.1);color:var(--danger)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  .main{margin-left:0;padding:16px}
+  .hamburger{display:block}
+  .overlay.show{display:block}
+}
+</style>
 </head>
-<body class="h-full">
-    <main class="gradient-bg py-12 px-4">
-        <div class="max-w-4xl mx-auto">
-            
-            <div class="text-center mb-8">
-                <a href="index.html" class="absolute top-6 left-6 text-gray-600 hover:text-black transition-colors">
-                    <i class="fas fa-arrow-left mr-2"></i>Kembali
-                </a>
-                <h2 class="text-2xl md:text-3xl font-bold text-gray-800">
-                    <i class="fas fa-history mr-3 text-purple-600"></i>Riwayat Pembayaran
-                </h2>
-                <p class="text-gray-500 mt-2">Lihat semua transaksi pembayaran Anda.</p>
-            </div>
 
-            <!-- Filter Buttons -->
-            <div class="flex justify-center space-x-2 mb-8">
-                <button id="filter-all" class="filter-btn bg-black/5 text-gray-700 px-4 py-2 rounded-lg hover:bg-black/10 transition-colors selected">Semua</button>
-                <button id="filter-lunas" class="filter-btn bg-black/5 text-gray-700 px-4 py-2 rounded-lg hover:bg-black/10 transition-colors">Berhasil</button>
-                <button id="filter-pending" class="filter-btn bg-black/5 text-gray-700 px-4 py-2 rounded-lg hover:bg-black/10 transition-colors">Proses</button>
-                <button id="filter-gagal" class="filter-btn bg-black/5 text-gray-700 px-4 py-2 rounded-lg hover:bg-black/10 transition-colors">Gagal</button>
-            </div>
+<body data-menu="payment-history">
 
-            <!-- Daftar Riwayat -->
-            <ul id="historyList" class="space-y-4">
-                <!-- Loading State -->
-                <li id="loading-state" class="liquid-glass rounded-xl p-6 text-center text-gray-600">
-                    <i class="fas fa-spinner fa-spin text-xl mr-3"></i>
-                    Memuat riwayat...
-                </li>
-                <!-- Empty State (hidden by default) -->
-                <li id="empty-state" class="hidden liquid-glass rounded-xl p-6 text-center text-gray-600">
-                    <i class="fas fa-file-invoice-dollar text-2xl mb-3"></i>
-                    <p>Tidak ada riwayat pembayaran yang ditemukan.</p>
-                </li>
-            </ul>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
+<div class="app">
+
+  <!-- SIDEBAR TEMPLATE -->
+  <div id="sidebar-container"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="flex items-center gap-3">
+        <div class="hamburger" onclick="toggleSidebar()">
+          <i class="fa-solid fa-bars"></i>
         </div>
-    </main>
+        <h2 class="text-xl font-semibold">
+          <i class="fas fa-history mr-2 text-purple-600"></i>
+          Riwayat Pembayaran
+        </h2>
+      </div>
 
-    <script src="payment-history.js"></script>
+      <div class="text-sm text-gray-500">
+        Role: <b id="user-role-display">Admin</b>
+      </div>
+    </header>
+
+    <!-- FILTER -->
+    <div class="card text-center">
+      <p class="text-gray-500 mb-4">Lihat semua transaksi pembayaran Anda</p>
+      <div class="flex flex-wrap justify-center gap-2">
+        <button id="filter-all" class="filter-btn selected">Semua</button>
+        <button id="filter-lunas" class="filter-btn">Berhasil</button>
+        <button id="filter-pending" class="filter-btn">Proses</button>
+        <button id="filter-gagal" class="filter-btn">Gagal</button>
+      </div>
+    </div>
+
+    <!-- HISTORY LIST -->
+    <div id="historyList" class="space-y-4">
+
+      <!-- LOADING -->
+      <div id="loading-state" class="card text-center text-gray-600">
+        <i class="fas fa-spinner fa-spin mr-2"></i>
+        Memuat riwayat pembayaran...
+      </div>
+
+      <!-- EMPTY -->
+      <div id="empty-state" class="hidden card text-center text-gray-600">
+        <i class="fas fa-file-invoice-dollar text-3xl mb-3"></i>
+        <p>Tidak ada riwayat pembayaran.</p>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- SCRIPT -->
+<script src="payment-history.js"></script>
+<script src="sidebar.js"></script>
+
 </body>
 </html>

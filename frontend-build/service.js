@@ -1,7 +1,7 @@
 /* services.js - FINAL FIXED VERSION 2.0 */
 
 // --- KONFIGURASI ---
-const API_BASE_URL = 'https://endlessproject.my.id'; 
+const API_BASE_URL = window.API_BASE_URL || 'https://endlessproject.my.id'; // Use global API_BASE_URL, fallback if not defined
 let token = localStorage.getItem('authToken');
 
 // Variabel Data Global
@@ -444,17 +444,15 @@ function updateConfirmButton() {
 // --- PAGE INITIALIZATION ---
 async function initDetailPageUI() {
     const title = document.getElementById('detailTitle');
-    const backBtn = document.getElementById('backBtn');
     
     // 1. Cek Mobil dan Redirect
     if (!currentCar) {
-         window.location.href = 'main.html';
+         window.location.href = 'estimasi_jasa.html';
          return; 
     }
     
     // Set Judul
-    title.innerHTML = `Invoice Estimasi: ${currentCar.model}`;
-    backBtn.onclick = () => window.location.href = 'main.html'; 
+    title.innerHTML = `Estimasi Jasa: ${currentCar.model}`;
 
     // --- LOGIKA DATA PELANGGAN (FIXED) ---
     const customerDetails = JSON.parse(localStorage.getItem('customerDetails')) || {};

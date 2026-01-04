@@ -1,78 +1,120 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const loadingState = document.getElementById('loading-state');
     const mainContent = document.getElementById('main-content');
-    // const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
     const API_BASE_URL = '';
-    // 1. Ambil transaction_id dari URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const transactionId = urlParams.get('tx_id');
+
+    // Fungsi untuk mendapatkan parameter dari URL
+    function getUrlParameter(name) {
+        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+        const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+        const results = regex.exec(location.search);
+        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+
+    const transactionId = getUrlParameter('tx_id');
 
     if (!transactionId) {
-        showError('ID Transaksi tidak valid.');
+        loadingState.classList.add('hidden');
+        mainContent.classList.remove('hidden');
+        mainContent.innerHTML = `
+            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+            <h2 class="text-xl font-bold mb-2">Transaksi Tidak Ditemukan</h2>
+            <p class="text-gray-600">ID transaksi tidak valid atau tidak diberikan.</p>
+        `;
         return;
     }
 
-    // Tampilkan konten utama
-    loadingState.classList.add('hidden');
-    mainContent.classList.remove('hidden');
-    mainContent.innerHTML = `
-        <i class="fas fa-shield-alt text-5xl text-green-600 mb-4"></i>
-        <h2 class="text-2xl font-bold mb-2">Konfirmasi Pembayaran</h2>
-        <p class="text-gray-600 mb-6">Anda akan mengonfirmasi pembayaran untuk transaksi dengan ID:</p>
-        <p class="font-mono bg-white/30 rounded-lg p-2 mb-8 text-sm">${transactionId}</p>
-        
-        <p class="text-gray-600 mb-4">Pastikan Anda telah menyelesaikan pembayaran sebelum menekan tombol di bawah ini.</p>
-
-        <button id="confirmBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-colors text-lg">
-            <i class="fas fa-check-circle mr-2"></i>Saya Sudah Bayar
-        </button>
-        <p id="errorMessage" class="text-red-600 mt-4 text-sm hidden"></p>
-    `;
-
-    // 2. Tambahkan event listener ke tombol
-    const confirmBtn = document.getElementById('confirmBtn');
-    confirmBtn.addEventListener('click', handleConfirmation);
-
-    async function handleConfirmation() {
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...`;
-        document.getElementById('errorMessage').classList.add('hidden');
-
+    async function fetchTransactionStatus() {
         try {
-            // Tidak perlu token di sini karena ini adalah aksi dari link publik
-            const response = await fetch(`${API_BASE_URL}/api/payments/confirm/${transactionId}`, {
-                method: 'POST'
-            });
-
-            const data = await response.json();
-
+            const response = await fetch(`${API_BASE_URL}/api/payments/status/${transactionId}`);
             if (!response.ok) {
-                throw new Error(data.detail || 'Gagal mengonfirmasi.');
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Gagal memuat status transaksi.');
             }
-
-            // Jika berhasil
-            mainContent.innerHTML = `
-                <i class="fas fa-check-circle text-6xl text-blue-600 mb-4"></i>
-                <h2 class="text-2xl font-bold mb-2">Pembayaran Dikonfirmasi!</h2>
-                <p class="text-gray-600">Terima kasih! Status pembayaran di halaman sebelumnya akan segera diperbarui. Anda bisa menutup halaman ini.</p>
-            `;
-
+            return await response.json();
         } catch (error) {
-            showError(error.message);
-            confirmBtn.disabled = false;
-            confirmBtn.innerHTML = `<i class="fas fa-check-circle mr-2"></i>Saya Sudah Bayar`;
+            console.error("Error fetching transaction status:", error);
+            return { status: 'ERROR', message: error.message };
         }
     }
 
-    function showError(message) {
+    async function renderPage(statusData) {
         loadingState.classList.add('hidden');
         mainContent.classList.remove('hidden');
-        const errorEl = document.getElementById('errorMessage');
-        if (errorEl) {
-            errorEl.textContent = message;
-            errorEl.classList.remove('hidden');
+
+        let contentHtml = '';
+        let buttonDisabled = false;
+        let buttonText = 'Konfirmasi Pembayaran';
+        let buttonClass = 'bg-blue-600 hover:bg-blue-700';
+
+        if (statusData.status === 'LUNAS') {
+            contentHtml = `
+                <i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i>
+                <h2 class="text-xl font-bold mb-2">Pembayaran Berhasil!</h2>
+                <p class="text-gray-600">Terima kasih, pembayaran Anda telah dikonfirmasi.</p>
+            `;
+            buttonDisabled = true;
+            buttonText = 'Pembayaran Sudah Dikonfirmasi';
+            buttonClass = 'bg-gray-400 cursor-not-allowed';
+        } else if (statusData.status === 'EXPIRED' || statusData.status === 'GAGAL') {
+            contentHtml = `
+                <i class="fas fa-times-circle text-red-500 text-4xl mb-4"></i>
+                <h2 class="text-xl font-bold mb-2">Pembayaran Gagal / Kedaluwarsa</h2>
+                <p class="text-gray-600">Sesi pembayaran ini sudah tidak berlaku.</p>
+            `;
+            buttonDisabled = true;
+            buttonText = 'Sesi Kedaluwarsa';
+            buttonClass = 'bg-gray-400 cursor-not-allowed';
+        } else if (statusData.status === 'PENDING') {
+            contentHtml = `
+                <i class="fas fa-hourglass-half text-blue-500 text-4xl mb-4"></i>
+                <h2 class="text-xl font-bold mb-2">Menunggu Konfirmasi</h2>
+                <p class="text-gray-600 mb-6">Silakan klik tombol di bawah untuk mengonfirmasi pembayaran Anda.</p>
+            `;
         } else {
-            mainContent.innerHTML = `<p class="text-red-500">${message}</p>`;
+            contentHtml = `
+                <i class="fas fa-exclamation-circle text-yellow-500 text-4xl mb-4"></i>
+                <h2 class="text-xl font-bold mb-2">Status Tidak Diketahui</h2>
+                <p class="text-gray-600">Terjadi kesalahan atau status transaksi tidak jelas.</p>
+                <p class="text-red-500 text-sm mt-2">${statusData.message || ''}</p>
+            `;
+            buttonDisabled = true;
+            buttonText = 'Tidak Dapat Dikonfirmasi';
+            buttonClass = 'bg-gray-400 cursor-not-allowed';
+        }
+
+        mainContent.innerHTML = `
+            ${contentHtml}
+            <button id="confirmBtn" class="mt-6 w-full text-white font-bold py-3 px-4 rounded-lg transition-colors ${buttonClass}" ${buttonDisabled ? 'disabled' : ''}>
+                ${buttonText}
+            </button>
+        `;
+
+        if (!buttonDisabled) {
+            document.getElementById('confirmBtn').addEventListener('click', async () => {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/payments/confirm/${transactionId}`,
+            { method: 'POST' }
+        );
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Gagal mengonfirmasi pembayaran.');
+        }
+
+        alert('Pembayaran berhasil dikonfirmasi!');
+        location.reload();
+
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+        console.error(error);
+    }
+});
+
         }
     }
+
+    const status = await fetchTransactionStatus();
+    renderPage(status);
 });

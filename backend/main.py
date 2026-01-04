@@ -1,6 +1,5 @@
 import os
 import bcrypt
-import shutil # Impor modul shutil untuk streaming file
 import uuid
 import jwt
 from typing import Optional, Union, List, Dict, Any
@@ -8,8 +7,8 @@ from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, Depends, status, Form, UploadFile, File, Query
 from fastapi.staticfiles import StaticFiles
 from weasyprint import HTML, CSS
-from fastapi.security import OAuth2PasswordBearer # Tetap pakai ini untuk dependensi
-from fastapi.middleware.cors import CORSMiddleware # Tambahkan UploadFile dan File
+from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse # [TAMBAHKAN] Impor HTMLResponse
 from pydantic import BaseModel
 import mysql.connector
@@ -18,19 +17,22 @@ from pathlib import Path
 import math
 import time
 import requests
-import json 
+import json
+from fastapi import Request
+from analisisdata import router as analisisdata_router # Import router dari analisisdata.py
+
 
 
 SENDABLE_API_KEY = "send_ab562d228ad7c5890fba9681a9fd02dcaeb69f702d1bf5d758858f4ca804c990" 
 WHATSAPP_API_URL = "https://api.sendable.dev/w/messages.send"
-PUBLIC_BASE_URL = "https://endlessproject.my.id/api/invoices" # Ganti dengan URL domain Anda
-LOCAL_SAVE_DIR = Path("./frontend-build/invoices")
+PUBLIC_BASE_URL = "https://endlessproject.my.id/api/invoices"
+FRONTEND_BUILD_DIR = Path("./frontend-build")
+LOCAL_SAVE_DIR = FRONTEND_BUILD_DIR / "invoices"
 load_dotenv()
 
 # --- Konfigurasi ---
 app = FastAPI(title="Chatbot Backend API", description="API untuk mengelola user dan riwayat chat.")
 
-# [FIX] Mount folder invoices agar file PDF bisa diakses publik via URL
 LOCAL_SAVE_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/invoices", StaticFiles(directory=LOCAL_SAVE_DIR), name="invoices")
 
@@ -79,11 +81,12 @@ CAR_COLUMN_MAPPING = {
 
 # Ambil konfigurasi dari environment variables Docker Compose
 DATABASE_HOST = os.getenv("DATABASE_HOST", "db")
+DATABASE_PORT = int(os.getenv("DATABASE_PORT", 3306))
 DATABASE_USER = os.getenv("DATABASE_USER", "user_n8n")
 DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD", "root") # Ingat ganti ini!
 DATABASE_NAME = os.getenv("DATABASE_NAME", "chatbot_history")
 # Pastikan JWT_SECRET kuat dan diambil dari environment variable di production!
-JWT_SECRET = os.getenv("JWT_SECRET", "GantiDenganRahasiaJWTYangKuatDanPanjang")
+JWT_SECRET = os.getenv("JWT_SECRET", "AD8622")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 # Token berlaku 1 jam
 
@@ -138,35 +141,38 @@ class OrderStatusUpdate(BaseModel):
 
 # --- Koneksi Database ---
 def get_db_connection():
-    try:
-        # [FIX] Menambahkan connection_timeout untuk mencegah hang
-        conn = mysql.connector.connect(
-            host=DATABASE_HOST,
-            user=DATABASE_USER,
-            password=DATABASE_PASSWORD,
-            database=DATABASE_NAME,
-            connection_timeout=10 # Timeout setelah 10 detik
-        )
-        # Periksa koneksi
-        if conn.is_connected():
-             print("Koneksi database berhasil.")
-             return conn
-        else:
-             print("Koneksi database GAGAL.")
-             raise HTTPException(status_code=503, detail="Tidak bisa terhubung ke database.")
+    retries = 5
+    while retries > 0:
+        try:
+            print(f"Mencoba menghubungkan ke database di {DATABASE_HOST}:{DATABASE_PORT}...")
+            conn = mysql.connector.connect(
+                host=DATABASE_HOST,
+                port=DATABASE_PORT,
+                user=DATABASE_USER,
+                password=DATABASE_PASSWORD,
+                database=DATABASE_NAME,
+                connection_timeout=10
+            )
+            if conn.is_connected():
+                print("Koneksi database berhasil.")
+                return conn
+        except mysql.connector.Error as err:
+            print(f"Gagal koneksi ke {DATABASE_HOST}:{DATABASE_PORT} ({retries} percobaan tersisa): {err}")
+            retries -= 1
+            
+            if retries == 0:
+                print("Gagal total menghubungkan ke database setelah beberapa kali percobaan.")
+                if err.errno == mysql.connector.errorcode.ER_ACCESS_DENIED_ERROR:
+                    raise HTTPException(status_code=401, detail=f"Akses database ditolak untuk user '{DATABASE_USER}'")
+                elif err.errno == mysql.connector.errorcode.ER_BAD_DB_ERROR:
+                    raise HTTPException(status_code=404, detail=f"Database '{DATABASE_NAME}' tidak ditemukan")
+                else:
+                    raise HTTPException(status_code=500, detail=f"Tidak dapat terhubung ke database: {err}")
+            time.sleep(5) # Menunggu sedikit lebih lama sebelum mencoba lagi
+        except Exception as e:
+            print(f"Error tidak terduga saat koneksi DB: {e}")
+            raise HTTPException(status_code=500, detail="Error server internal.")
 
-    except mysql.connector.Error as err:
-        print(f"Error koneksi database: {err}")
-        # Bedakan error spesifik jika perlu
-        if err.errno == mysql.connector.errorcode.ER_ACCESS_DENIED_ERROR:
-             raise HTTPException(status_code=401, detail=f"Akses database ditolak untuk user '{DATABASE_USER}'")
-        elif err.errno == mysql.connector.errorcode.ER_BAD_DB_ERROR:
-             raise HTTPException(status_code=404, detail=f"Database '{DATABASE_NAME}' tidak ditemukan")
-        else:
-             raise HTTPException(status_code=500, detail=f"Error database tidak dikenal: {err}")
-    except Exception as e:
-        print(f"Error tidak terduga saat koneksi DB: {e}")
-        raise HTTPException(status_code=500, detail="Error server internal.")
 
 
 # --- Fungsi Utilitas Keamanan ---
@@ -177,11 +183,21 @@ def hash_password(password: str) -> str:
     hashed_password = bcrypt.hashpw(pwd_bytes, salt)
     return hashed_password.decode('utf-8')
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+def verify_password(plain_password: str, hashed_password: Optional[str]) -> bool:
     """Memverifikasi password plain dengan hash."""
-    password_byte_enc = plain_password.encode('utf-8')
-    hashed_password_byte_enc = hashed_password.encode('utf-8')
-    return bcrypt.checkpw(password_byte_enc, hashed_password_byte_enc)
+    if not plain_password or not hashed_password:
+        print("DEBUG: Plain password atau hashed password kosong/None.")
+        return False # Tidak bisa verifikasi jika salah satu kosong atau None
+    try:
+        password_byte_enc = plain_password.encode('utf-8')
+        hashed_password_byte_enc = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(password_byte_enc, hashed_password_byte_enc)
+    except ValueError: # bcrypt.checkpw dapat mengeluarkan ValueError untuk format hash yang tidak valid
+        print("DEBUG: Format hash bcrypt yang disimpan tidak valid.")
+        return False
+    except Exception as e:
+        print(f"DEBUG: Error tak terduga saat verifikasi password: {e}")
+        return False
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Membuat token JWT."""
@@ -223,86 +239,239 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
 
 # --- Endpoints API ---
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=FileResponse)
 async def read_root():
-    with open("index.html", "r", encoding="utf-8") as f:
-        return f.read()
+    index_path = FRONTEND_BUILD_DIR / "index.html"
+    if not index_path.is_file():
+        raise HTTPException(status_code=404, detail=f"File frontend 'index.html' tidak ditemukan di path: {index_path.resolve()}")
+    return FileResponse(index_path)
+
+class RegisterRequest(BaseModel):
+    phone_number: str
+    password: str
+    captcha_token: str
+
+@app.post("/api/register-request")
+async def register_request(data: RegisterRequest, request: Request):
+    print(f"Menerima permintaan registrasi untuk: {data.phone_number}") # LOG 1
+
+    # 1. VALIDASI CAPTCHA (WAJIB)
+    captcha_verify = requests.post(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        data={
+            "secret": os.getenv("TURNSTILE_SECRET"),
+            "response": data.captcha_token
+        }
+    ).json()
+    
+    print(f"Hasil verifikasi CAPTCHA: {captcha_verify}") # LOG 2
+
+    if not captcha_verify.get("success"):
+        print("Verifikasi CAPTCHA gagal.") # LOG 3
+        raise HTTPException(status_code=400, detail="CAPTCHA tidak valid")
+
+    # 2. VALIDASI FORMAT NOMOR
+    if not data.phone_number.startswith("62"):
+        print(f"Format nomor telepon salah: {data.phone_number}") # LOG 4
+        raise HTTPException(status_code=400, detail="Format nomor tidak valid")
+
+    # 3. CEK NOMOR SUDAH TERDAFTAR (READ ONLY)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT phone_number FROM users WHERE phone_number = %s",
+        (data.phone_number,)
+    )
+    if cursor.fetchone():
+        print(f"Nomor {data.phone_number} sudah terdaftar.") # LOG 5
+        raise HTTPException(status_code=400, detail="Nomor sudah terdaftar")
+
+    cursor.close()
+    conn.close()
+
+    # 4. KIRIM KE N8N (INI INTINYA 🔥)
+    n8n_payload = {
+        "phone_number": data.phone_number,
+        "password": data.password,
+        "ip": request.client.host,
+        "user_agent": request.headers.get("user-agent")
+    }
+
+    n8n_response = requests.post(
+        os.getenv("N8N_REGISTER_WEBHOOK"),
+        json=n8n_payload,
+        timeout=10
+    )
+
+    if n8n_response.status_code != 200:
+        raise HTTPException(status_code=500, detail="Gagal mengirim ke sistem approval")
+
+    # 5. RESPONSE KE FRONTEND
+    return {
+        "status": "pending",
+        "message": "Permintaan pendaftaran dikirim. Menunggu persetujuan admin."
+    }
 
 
-@app.post("/api/register", status_code=status.HTTP_201_CREATED)
-async def register_user(user: UserCreate):
-    conn = None
-    cursor = None
-    try:
-        hashed_pw = hash_password(user.password)
-        conn = get_db_connection()
-        cursor = conn.cursor()
+class UserLogin(BaseModel):
+    phone_number: str
+    password: str
+    captcha_token: str
 
-        # Cek duplikasi
-        cursor.execute("SELECT phone_number FROM users WHERE phone_number = %s", (user.phone_number,))
-        if cursor.fetchone():
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nomor telepon sudah terdaftar")
 
-        # Insert user baru
-        cursor.execute(
-            "INSERT INTO users (phone_number, password_hash) VALUES (%s, %s)",
-            (user.phone_number, hashed_pw)
-        )
-        conn.commit()
-        return {"message": "Registrasi berhasil"}
-
-    except mysql.connector.Error as err:
-        print(f"Register DB Error: {err}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Terjadi kesalahan pada database saat registrasi.")
-    except HTTPException as http_err:
-        raise http_err
-    except Exception as e:
-        print(f"Register Unexpected Error: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Terjadi kesalahan tidak terduga.")
-    finally:
-        if cursor: cursor.close()
-        if conn and conn.is_connected(): conn.close()
-
-# --- Endpoint Login (Menerima JSON, bukan Form) ---
 @app.post("/api/login", response_model=Token)
-async def login_for_access_token(user_credentials: UserLogin): # Menggunakan model Pydantic UserLogin
+async def login_for_access_token(user: UserLogin):
+
+    # 1️⃣ VALIDASI CAPTCHA
+    captcha_verify = requests.post(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        data={
+            "secret": os.getenv("TURNSTILE_SECRET"),
+            "response": user.captcha_token
+        }
+    ).json()
+
+    if not captcha_verify.get("success"):
+        raise HTTPException(status_code=400, detail="CAPTCHA tidak valid")
+
+    # 2️⃣ CEK USER DI DATABASE
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute(
+        "SELECT phone_number, password_hash FROM users WHERE phone_number = %s",
+        (user.phone_number,)
+    )
+    user_db = cursor.fetchone()
+
+    if not user_db:
+        raise HTTPException(
+            status_code=401,
+            detail="Nomor telepon atau password salah"
+        )
+
+    # 3️⃣ VERIFIKASI PASSWORD
+    if not verify_password(user.password, user_db["password_hash"]):
+        raise HTTPException(
+            status_code=401,
+            detail="Nomor telepon atau password salah"
+        )
+
+    # 4️⃣ BUAT TOKEN
+    access_token = create_access_token(
+        data={"sub": user_db["phone_number"]}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+
+# --- Sertakan Router Analisis Data ---
+# Semua endpoint di analisisdata_router akan memerlukan otentikasi JWT
+app.include_router(analisisdata_router, dependencies=[Depends(get_current_user)])
+
+# --- New Endpoint for User Profile ---
+# --- [REVISI] Endpoint User Profile dengan Fallback Aman ---
+@app.get("/api/user/profile")
+async def get_user_profile(current_user_phone: str = Depends(get_current_user)):
     conn = None
     cursor = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+        
+        # Eksekusi query untuk mengambil role
+        cursor.execute("SELECT role FROM users WHERE phone_number = %s", (current_user_phone,))
+        user_row = cursor.fetchone()
+        
+        # CASE 1: Data User tidak ada di Database
+        if not user_row:
+            print(f"CRITICAL: User dengan nomor {current_user_phone} tidak ditemukan di tabel users!")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail=f"User {current_user_phone} tidak terdaftar di database."
+            )
+        
+        # CASE 2: Kolom role ada tapi nilainya NULL
+        if user_row.get("role") is None:
+            print(f"CRITICAL: Kolom role untuk {current_user_phone} bernilai NULL!")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Role user belum diatur (NULL). Silakan isi di database."
+            )
+        
+        # Jika semua oke, baru return (Hanya untuk perbandingan)
+        return {"role": user_row["role"]}
 
-        cursor.execute("SELECT phone_number, password_hash FROM users WHERE phone_number = %s", (user_credentials.phone_number,))
-        user_in_db = cursor.fetchone()
-
-        # Verifikasi user dan password
-        is_password_correct = False
-        if user_in_db:
-            is_password_correct = verify_password(user_credentials.password, user_in_db['password_hash'])
-
-        # Jika user tidak ditemukan atau password salah
-        if not user_in_db or not is_password_correct:
-            # Alih-alih 401, kita bisa kirim 400 atau 401, tapi pastikan frontend bisa handle
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Nomor telepon atau password salah")
-
-        # Buat token JWT
-        access_token = create_access_token(data={"sub": user_in_db['phone_number']})
-
-        return {"access_token": access_token, "token_type": "bearer"} # Ini adalah respons sukses
-
-    except mysql.connector.Error as err:
-        print(f"Login DB Error: {err}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Terjadi kesalahan pada database saat login.")
-    except HTTPException as http_err:
-        raise http_err
+    except mysql.connector.Error as db_err:
+        # CASE 3: Error Database (misal kolom 'role' tidak ada)
+        print(f"DATABASE ERROR DETECTED: {db_err}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Masalah Database: {str(db_err)}"
+        )
     except Exception as e:
-        print(f"Login Unexpected Error: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Terjadi kesalahan tidak terduga.")
+        # CASE 4: Error lainnya
+        print(f"UNEXPECTED ERROR: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error sistem: {str(e)}"
+        )
     finally:
         if cursor: cursor.close()
         if conn and conn.is_connected(): conn.close()
 
+# Model Pydantic untuk update user
+class UserUpdate(BaseModel):
+    role: str
+    status: str
 
+# 1. Endpoint Ambil Semua User
+@app.get("/api/admin/users")
+async def get_all_users(current_user: str = Depends(get_current_user)):
+    # Validasi role harus Owner/Manager
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id, phone_number, role, status, created_at FROM users")
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+# 2. Endpoint Update Role/Status
+@app.put("/api/admin/users/{user_id}")
+async def update_user(user_id: int, data: UserUpdate, current_user: str = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "UPDATE users SET role = %s, status = %s WHERE id = %s",
+            (data.role, data.status, user_id)
+        )
+        conn.commit()
+        return {"message": "User updated successfully"}
+    finally:
+        cursor.close()
+        conn.close()
+
+# 3. Endpoint Hapus User
+@app.delete("/api/admin/users/{user_id}")
+async def delete_user(user_id: int, current_user: str = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        conn.commit()
+        return {"message": "User deleted"}
+    finally:
+        cursor.close()
+        conn.close()
+        
+        
+        
 # --- Endpoint History (Memerlukan Otentikasi) ---
 @app.get("/api/chat-history")
 async def read_chat_history(current_user_phone: str = Depends(get_current_user)):

@@ -4,9 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const emptyState = document.getElementById('empty-state');
     const loadingRow = document.getElementById('loading-row');
     const grandTotalSection = document.getElementById('grand-total-section');
-    const confirmPaymentBtn = document.getElementById('confirmPaymentBtn'); // Tambahkan referensi tombol baru
-    //const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
-    // Gunakan path relatif, browser otomatis akan pakai domain dan https yang sama
+    const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
     const API_BASE_URL = '';
     const token = localStorage.getItem('authToken');
 
@@ -48,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (cleanPartNumber) { // Pastikan part_number tidak null/empty
                     sparepartData[cleanPartNumber] = {
                         name: part.part_name || 'Nama tidak tersedia',
-                        price: part.price || 0 // price sudah berupa angka dari backend
+                        price: Number(part.price) || 0 // [FIX] Paksa jadi Number untuk keamanan perhitungan
                     };
                 }
             });
@@ -156,15 +154,28 @@ document.addEventListener('DOMContentLoaded', function() {
     // 4. Fungsi untuk merender baris tabel dan total
     function renderTable(items) {
         tableBody.innerHTML = ''; // Kosongkan tabel
-        let subtotal = 0;
+        
+        // Fungsi helper untuk menghitung ulang total global
+        function recalculateGlobalTotals() {
+            let subtotal = 0;
+            items.forEach(item => {
+                if (item.priceFound) {
+                    subtotal += item.qty * (Number(item.price) || 0); // [FIX] Pastikan harga dikali sebagai angka
+                }
+            });
+
+            const ppn = subtotal * 0.11;
+            const total = subtotal + ppn;
+
+            document.getElementById('grand-subtotal').textContent = formatRupiah(subtotal);
+            document.getElementById('grand-ppn').textContent = formatRupiah(ppn);
+            document.getElementById('grand-total').textContent = formatRupiah(total);
+        }
+
         let rowNum = 1;
 
         items.forEach(item => {
             const totalPerRow = item.qty * item.price;
-            // Hanya tambahkan ke subtotal jika harga ditemukan
-            if (item.priceFound) {
-                subtotal += totalPerRow;
-            }
  
             // Tentukan tampilan harga dan total berdasarkan apakah harga ditemukan
             const priceDisplay = item.priceFound ? formatRupiah(item.price) : '<span class="text-red-600 font-semibold">Tidak Ditemukan</span>';
@@ -185,21 +196,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td class="px-4 py-3">${item.name}</td>
                 <td class="px-4 py-3 text-center">
-                    <input type="number" min="1" value="${item.qty}" class="qty-input w-16 text-center rounded-md p-1">
+                    <input type="number" min="0" value="${item.qty}" class="qty-input w-16 text-center rounded-md p-1 border border-gray-300">
                 </td>
                 <td class="px-4 py-3 text-right font-mono">${priceDisplay}</td>
-                <td class="px-4 py-3 text-right font-mono font-semibold">${totalPerRowDisplay}</td>
+                <td class="px-4 py-3 text-right font-mono font-semibold row-total">${totalPerRowDisplay}</td>
             `;
+            
+            // Event Listener untuk perubahan Qty
+            const qtyInput = row.querySelector('.qty-input');
+            qtyInput.addEventListener('input', function() {
+                const newQty = parseInt(this.value);
+                // [FIX] Izinkan 0 agar harga terupdate jadi 0
+                if (!isNaN(newQty) && newQty >= 0) {
+                    item.qty = newQty; // Update data item
+                    
+                    // Update Row Total jika harga ada
+                    if (item.priceFound) {
+                        const newRowTotal = item.qty * (Number(item.price) || 0);
+                        row.querySelector('.row-total').textContent = formatRupiah(newRowTotal);
+                    }
+                    
+                    // Update Grand Total
+                    recalculateGlobalTotals();
+                }
+            });
+
             tableBody.appendChild(row);
         });
 
-        // Hitung dan tampilkan Grand Total
-        const ppn = subtotal * 0.11;
-        const total = subtotal + ppn;
-
-        document.getElementById('grand-subtotal').textContent = formatRupiah(subtotal);
-        document.getElementById('grand-ppn').textContent = formatRupiah(ppn);
-        document.getElementById('grand-total').textContent = formatRupiah(total);
+        // Hitung total awal
+        recalculateGlobalTotals();
         grandTotalSection.classList.remove('hidden');
     }
 
@@ -248,6 +274,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const totalAmount = parseFloat(totalText.replace(/[^0-9,]/g, '').replace(',', '.'));
                 if (isNaN(totalAmount)) {
                     throw new Error(`Gagal mengonversi total "${totalText}" menjadi angka.`);
+                }
+                
+                // [FIX] Validasi total tidak boleh 0 atau negatif
+                if (totalAmount <= 0) {
+                    throw new Error("Total pembayaran Rp 0. Silakan masukkan jumlah item yang valid (minimal 1).");
                 }
                 console.log("Langkah 3: Total berhasil dikonversi menjadi angka:", totalAmount);
 

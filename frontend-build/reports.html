@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id" data-menu="reports">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Penjualan Sparepart</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+:root{
+  --bg:#f9fafb;
+  --card:#ffffff;
+  --border:#e5e7eb;
+  --text:#111827;
+  --muted:#6b7280;
+  --accent:#2563eb;
+  --shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* ===== LAYOUT ===== */
+.app { display: flex; min-height: 100vh; }
+
+.main{
+  margin-left:260px;
+  padding:24px 32px;
+  width: 100%;
+}
+
+/* ===== HAMBURGER (Hanya muncul di mobile) ===== */
+.hamburger{
+  display:none;
+  font-size:22px;
+  cursor:pointer;
+}
+
+.overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+  z-index:40;
+}
+
+.card{
+  background:var(--card);
+  border-radius:14px;
+  padding:20px;
+  box-shadow:var(--shadow);
+  margin-bottom:24px;
+}
+
+.report-grid{
+  display:grid;
+  grid-template-columns:1fr 1.4fr;
+  gap:24px;
+}
+
+/* ===== PROGRESS ===== */
+.progress-bar{
+  height:8px;
+  background:#e5e7eb;
+  border-radius:999px;
+  overflow:hidden;
+}
+.progress-bar span{
+  display:block;
+  height:100%;
+  width:0%;
+  background:var(--accent);
+  transition:width .2s;
+}
+
+/* ===== TABLE ===== */
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px;border-bottom:1px solid var(--border)}
+th{background:#f3f4f6; font-size: 13px; color: var(--muted)}
+.rank{font-weight:700;color:var(--accent)}
+.chart-wrap{height:360px}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:900px){
+  .main{margin-left:0; padding: 16px}
+  .hamburger{display:block}
+  .overlay.show{display:block}
+  .report-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="app">
+    <div id="sidebar-container"></div>
+
+    <main class="main">
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-3">
+                <div class="hamburger" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-bars"></i>
+                </div>
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-chart-pie text-blue-600"></i>
+                    Report Penjualan Sparepart
+                </h2>
+            </div>
+            <div class="text-sm text-gray-500">
+                Role: <b id="user-role-display">-</b>
+            </div>
+        </header>
+
+        <div class="card">
+            <div class="flex flex-wrap items-center gap-4">
+                <div class="flex-1 min-w-[200px]">
+                    <input type="file" id="excelFile" accept=".xls,.xlsx" 
+                           class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+                <button onclick="uploadExcel()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition">
+                    Upload & Analisis
+                </button>
+                <span id="status" class="text-sm text-gray-500 font-medium">Menunggu file</span>
+            </div>
+
+            <div class="mt-4">
+                <div class="progress-bar">
+                    <span id="progressBar"></span>
+                </div>
+            </div>
+        </div >
+
+        <div class="report-grid">
+
+            <div class="card overflow-hidden">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-trophy text-amber-500"></i>
+                    Sparepart Terlaris
+                </h3>
+                <div class="overflow-x-auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Part Number</th>
+                                <th>Nama</th>
+                                <th>Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboardBody">
+                            <tr><td colspan="4" class="text-center py-10 text-gray-400">Belum ada data</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-chart-line text-green-500"></i>
+                    Trend Penjualan
+                </h3>
+                <div class="chart-wrap">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script src="sidebar.js"></script>
+
+<script>
+let chart;
+
+function uploadExcel(){
+  const file = document.getElementById("excelFile").files[0];
+  if(!file) return alert("Pilih file Excel dulu");
+
+  const token = localStorage.getItem("authToken");
+  const xhr = new XMLHttpRequest();
+  const fd = new FormData();
+  fd.append("file", file);
+
+  document.getElementById("status").textContent = "Uploading...";
+  document.getElementById("progressBar").style.width = "0%";
+
+  xhr.upload.onprogress = e=>{
+    if(e.lengthComputable){
+      const p = Math.round((e.loaded/e.total)*100);
+      document.getElementById("progressBar").style.width = p+"%";
+      document.getElementById("status").textContent = `Uploading ${p}%`;
+    }
+  };
+
+  xhr.onload = ()=>{
+    try {
+        const data = JSON.parse(xhr.responseText);
+        renderLeaderboard(data.leaderboard);
+        renderChart(data.trend);
+        document.getElementById("status").textContent = "Selesai ✔";
+        document.getElementById("progressBar").style.width = "100%";
+    } catch (e) {
+        document.getElementById("status").textContent = "Gagal memproses data";
+    }
+  };
+
+  xhr.open("POST", `${API_BASE_URL}/api/report/upload`);
+  xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+  xhr.send(fd);
+}
+
+function renderLeaderboard(data){
+  const body = document.getElementById("leaderboardBody");
+  body.innerHTML="";
+  if(!data || data.length === 0) {
+      body.innerHTML = '<tr><td colspan="4" class="text-center py-10 text-gray-400">Tidak ada data ditemukan</td></tr>';
+      return;
+  }
+  data.forEach((r,i)=>{
+    body.innerHTML+=`
+      <tr class="hover:bg-gray-50 transition">
+        <td class="rank">${i+1}</td>
+        <td class="font-mono text-sm">${r.part_number}</td>
+        <td class="text-sm">${r.part_name}</td>
+        <td class="font-bold">${r.qty}</td>
+      </tr>`;
+  });
+}
+
+function renderChart(data){
+  const labels=[...new Set(data.map(d=>d.bulan))];
+  const parts=[...new Set(data.map(d=>d.part_number))];
+
+  const datasets=parts.map(p=>({
+    label:p,
+    data:labels.map(l=>{
+      const r=data.find(d=>d.bulan===l && d.part_number===p);
+      return r?r.total_penjualan:0;
+    }),
+    borderColor: '#' + Math.floor(Math.random()*16777215).toString(16),
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    tension:.4
+  }));
+
+  chart && chart.destroy();
+  chart=new Chart(document.getElementById('trendChart'),{
+      type:"line",
+      data:{labels,datasets},
+      options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+          }
+      }
+  });
+}
+</script>
+
+</body>
+</html>

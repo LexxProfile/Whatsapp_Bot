@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body class="bg-gray-50" data-menu="users">
+
+    <div id="sidebar-container"></div>
+
+    <main class="ml-0 md:ml-[260px] p-6 transition-all">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Manajemen User</h1>
+            <div class="text-sm text-gray-500">Total User: <span id="userCount">0</span></div>
+        </div>
+
+        <div class="glass-card rounded-2xl overflow-hidden shadow-sm">
+            <table class="w-full text-left">
+                <thead class="bg-gray-100 border-b">
+                    <tr>
+                        <th class="p-4 font-semibold text-gray-600">No. Telepon</th>
+                        <th class="p-4 font-semibold text-gray-600">Role</th>
+                        <th class="p-4 font-semibold text-gray-600">Status</th>
+                        <th class="p-4 font-semibold text-gray-600">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="sidebar.js"></script>
+    <script src="users.js"></script>
+</body>
+</html>

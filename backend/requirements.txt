@@ -9,3 +9,4 @@ weasyprint
 python-multipart 
 requests
 pdfkit
+pandas
