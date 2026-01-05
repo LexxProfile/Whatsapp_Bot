@@ -8,7 +8,7 @@
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- ✅ TURNSTILE CALLBACK (HARUS DI ATAS) -->
+    <!-- ✅ TURNSTILE CALLBACK (DIPERTAHANKAN) -->
     <script>
         window.captchaToken = null;
 
@@ -18,207 +18,230 @@
         };
     </script>
 
-    <!-- ✅ LOAD TURNSTILE (HANYA SEKALI) -->
+    <!-- ✅ LOAD TURNSTILE -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
     <!-- Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-    <!-- Style (TIDAK DIUBAH) -->
+    <!-- Style (Disamakan dengan Login Light Theme) -->
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
         }
-        .liquid-glass {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        .login-card {
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
         }
-        .bg-image {
-            background-image: url('background/login.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-        .glass-input {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+        .input-field {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
             transition: all 0.3s ease;
         }
-        .glass-input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
+        .input-field::placeholder {
+            color: #94a3b8;
         }
-        .glass-input:focus {
-            background: rgba(255, 255, 255, 0.2);
+        .input-field:focus {
+            background: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
             outline: none;
-            border-color: rgba(255, 255, 255, 0.5);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+        .input-icon {
+            color: #64748b;
         }
     </style>
 </head>
 
-<body class="h-full bg-image flex items-center justify-center p-4">
+<body class="h-full flex items-center justify-center p-6">
 
-<div class="liquid-glass rounded-3xl p-8 w-full max-w-md">
+    <div class="login-card rounded-3xl p-8 w-full max-w-md my-8">
 
-    <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-white mb-2">Buat Akun</h1>
-        <p class="text-white/80">Bergabunglah dengan Endless Project</p>
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-50 rounded-2xl mb-3 border border-blue-100">
+                <i class="fa-solid fa-user-plus text-blue-600 text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Buat Akun</h1>
+            <p class="text-slate-500 mt-1 text-sm">Bergabunglah dengan Endless Project</p>
+        </div>
+
+        <form id="registerForm" class="space-y-4">
+
+            <div>
+                <label class="block text-slate-700 text-sm font-semibold mb-1.5 ml-1">Nama Lengkap</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 input-icon">
+                        <i class="fas fa-user text-sm"></i>
+                    </span>
+                    <input type="text" id="fullName"
+                           class="input-field w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-400 font-medium"
+                           placeholder="Nama Anda" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-slate-700 text-sm font-semibold mb-1.5 ml-1">Nomor WhatsApp</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 input-icon">
+                        <i class="fas fa-phone text-sm"></i>
+                    </span>
+                    <input type="text" id="phoneNumber"
+                           class="input-field w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-400 font-medium"
+                           placeholder="08xxxxxxxxxx" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-slate-700 text-sm font-semibold mb-1.5 ml-1">Password</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 input-icon">
+                        <i class="fas fa-lock text-sm"></i>
+                    </span>
+                    <input type="password" id="password"
+                           class="input-field w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-400 font-medium"
+                           placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-slate-700 text-sm font-semibold mb-1.5 ml-1">Konfirmasi Password</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 input-icon">
+                        <i class="fas fa-check-circle text-sm"></i>
+                    </span>
+                    <input type="password" id="confirmPassword"
+                           class="input-field w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-400 font-medium"
+                           placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <!-- ✅ CAPTCHA (CALLBACK AKTIF, TEMA LIGHT) -->
+            <div class="flex justify-center pt-2">
+                <div class="cf-turnstile"
+                     data-sitekey="0x4AAAAAACHMnsUfcqFy4Qot"
+                     data-callback="onTurnstileSuccess"
+                     data-theme="light">
+                </div>
+            </div>
+
+            <button type="submit"
+                    class="btn-primary w-full text-white font-bold rounded-xl py-3.5 mt-2 shadow-lg shadow-blue-500/30">
+                Daftar Sekarang
+            </button>
+        </form>
+
+        <div class="mt-6 pt-5 border-t border-slate-100 text-center">
+            <p class="text-slate-500 text-sm">
+                Sudah punya akun?
+                <a href="login.html" class="text-blue-600 font-bold hover:text-blue-700 transition-colors">
+                    Login disini
+                </a>
+            </p>
+        </div>
+
+        <!-- Pesan Error / Sukses disesuaikan dengan tema terang -->
+        <p id="errorMessage" class="hidden mt-4 p-3 bg-red-50 border border-red-100 rounded-xl text-center text-red-600 text-sm font-medium"></p>
+        <p id="successMessage" class="hidden mt-4 p-3 bg-green-50 border border-green-100 rounded-xl text-center text-green-600 text-sm font-medium"></p>
     </div>
 
-    <form id="registerForm" class="space-y-5">
+    <!-- ================= REGISTER SCRIPT (TIDAK DIUBAH) ================= -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
 
-        <div>
-            <label class="block text-white text-sm font-bold mb-2">Nama Lengkap</label>
-            <div class="relative">
-                <span class="absolute left-4 top-3.5 text-white/60"><i class="fas fa-user"></i></span>
-                <input type="text" id="fullName"
-                       class="glass-input w-full rounded-xl py-3 pl-10 pr-4"
-                       placeholder="Nama Anda" required>
-            </div>
-        </div>
+        const registerForm = document.getElementById('registerForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const API_BASE_URL = '';
 
-        <div>
-            <label class="block text-white text-sm font-bold mb-2">Nomor WhatsApp</label>
-            <div class="relative">
-                <span class="absolute left-4 top-3.5 text-white/60"><i class="fas fa-phone"></i></span>
-                <input type="text" id="phoneNumber"
-                       class="glass-input w-full rounded-xl py-3 pl-10 pr-4"
-                       placeholder="08xxxxxxxxxx" required>
-            </div>
-        </div>
-
-        <div>
-            <label class="block text-white text-sm font-bold mb-2">Password</label>
-            <div class="relative">
-                <span class="absolute left-4 top-3.5 text-white/60"><i class="fas fa-lock"></i></span>
-                <input type="password" id="password"
-                       class="glass-input w-full rounded-xl py-3 pl-10 pr-4"
-                       placeholder="••••••••" required>
-            </div>
-        </div>
-
-        <div>
-            <label class="block text-white text-sm font-bold mb-2">Konfirmasi Password</label>
-            <div class="relative">
-                <span class="absolute left-4 top-3.5 text-white/60"><i class="fas fa-check-circle"></i></span>
-                <input type="password" id="confirmPassword"
-                       class="glass-input w-full rounded-xl py-3 pl-10 pr-4"
-                       placeholder="••••••••" required>
-            </div>
-        </div>
-
-        <!-- ✅ CAPTCHA (CALLBACK AKTIF) -->
-        <div class="flex justify-center">
-            <div class="cf-turnstile"
-                 data-sitekey="0x4AAAAAACHMnsUfcqFy4Qot"
-                 data-callback="onTurnstileSuccess">
-            </div>
-        </div>
-
-        <button type="submit"
-                class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold rounded-xl py-3 transition-colors shadow-lg">
-            Daftar
-        </button>
-    </form>
-
-    <div class="mt-8 text-center text-white/80 text-sm">
-        <p>Sudah punya akun?
-            <a href="login.html" class="font-bold text-white hover:underline">Login disini</a>
-        </p>
-    </div>
-
-    <p id="errorMessage" class="text-center mt-4 text-red-500 text-sm font-medium hidden"></p>
-    <p id="successMessage" class="text-center mt-4 text-green-400 text-sm font-medium hidden"></p>
-</div>
-
-<!-- ================= REGISTER SCRIPT ================= -->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    const registerForm = document.getElementById('registerForm');
-    const errorMessage = document.getElementById('errorMessage');
-    const successMessage = document.getElementById('successMessage');
-    const API_BASE_URL = '';
-
-    function normalizePhoneNumber(phone) {
-        let clean = phone.replace(/\D/g, '');
-        if (clean.startsWith('0')) clean = '62' + clean.slice(1);
-        return clean;
-    }
-
-    function showError(msg) {
-        errorMessage.textContent = msg;
-        errorMessage.classList.remove('hidden');
-    }
-
-    function showSuccess(msg) {
-        successMessage.textContent = msg;
-        successMessage.classList.remove('hidden');
-    }
-
-    function hideMessages() {
-        errorMessage.classList.add('hidden');
-        successMessage.classList.add('hidden');
-    }
-
-    registerForm.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        hideMessages();
-
-        let phone = document.getElementById('phoneNumber').value;
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-
-        if (password !== confirmPassword) {
-            showError('Password dan konfirmasi password tidak cocok.');
-            return;
+        function normalizePhoneNumber(phone) {
+            let clean = phone.replace(/\D/g, '');
+            if (clean.startsWith('0')) clean = '62' + clean.slice(1);
+            return clean;
         }
 
-        phone = normalizePhoneNumber(phone);
-
-        if (!/^62\d{9,13}$/.test(phone)) {
-            showError('Nomor WhatsApp tidak valid.');
-            return;
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorMessage.classList.remove('hidden');
         }
 
-        if (!window.captchaToken) {
-            showError('Silakan selesaikan CAPTCHA terlebih dahulu.');
-            return;
+        function showSuccess(msg) {
+            successMessage.textContent = msg;
+            successMessage.classList.remove('hidden');
         }
 
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/register-request`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phone_number: phone,
-                    password: password,
-                    captcha_token: window.captchaToken
-                })
-            });
+        function hideMessages() {
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+        }
 
-            const data = await res.json();
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            hideMessages();
 
-            if (!res.ok) {
-                throw new Error(data.detail || 'Registrasi gagal.');
+            let phone = document.getElementById('phoneNumber').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showError('Password dan konfirmasi password tidak cocok.');
+                return;
             }
 
-            showSuccess(
-                'Permintaan pendaftaran berhasil dikirim. ' +
-                'Menunggu persetujuan admin via WhatsApp.'
-            );
+            phone = normalizePhoneNumber(phone);
 
-            registerForm.reset();
-            window.captchaToken = null;
+            if (!/^62\d{9,13}$/.test(phone)) {
+                showError('Nomor WhatsApp tidak valid.');
+                return;
+            }
 
-        } catch (err) {
-            showError(err.message);
-        }
+            if (!window.captchaToken) {
+                showError('Silakan selesaikan CAPTCHA terlebih dahulu.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/register-request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone_number: phone,
+                        password: password,
+                        captcha_token: window.captchaToken
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Registrasi gagal.');
+                }
+
+                showSuccess(
+                    'Permintaan pendaftaran berhasil dikirim. ' +
+                    'Menunggu persetujuan admin via WhatsApp.'
+                );
+
+                registerForm.reset();
+                window.captchaToken = null;
+
+            } catch (err) {
+                showError(err.message);
+            }
+        });
     });
-});
-</script>
+    </script>
 
 </body>
 </html>

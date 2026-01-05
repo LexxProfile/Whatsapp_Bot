@@ -3,198 +3,389 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sidebar Template</title>
+<title>Modern Sidebar Dashboard</title>
 
+<!-- External Resources -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-:root{
-  --bg:#ffffff;
-  --border:#e5e7eb;
-  --text:#111827;
-  --muted:#6b7280;
-  --accent:#2563eb;
-  --danger:#dc2626;
-}
+    /* ===== VARIABLES & RESET ===== */
+    :root {
+        --primary-color: #4f46e5; /* Indigo */
+        --primary-light: #e0e7ff;
+        --text-main: #1f2937;
+        --text-muted: #6b7280;
+        --bg-body: #f3f4f6;
+        --bg-sidebar: #ffffff;
+        --danger-color: #ef4444;
+        --danger-bg: #fee2e2;
+        --border-color: #f0f0f0;
+        --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        --transition: all 0.3s ease;
+    }
 
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:'Inter',sans-serif;
-  background:#f9fafb;
-}
-
-/* ===== SIDEBAR ===== */
-.sidebar{
-  width:260px;
-  background:var(--bg);
-  border-right:1px solid var(--border);
-  position:fixed;
-  inset:0 auto 0 0;
-  padding:24px 16px;
-  display:flex;
-  flex-direction:column;
-}
-
-.brand{
-  font-size:20px;
-  font-weight:700;
-  margin-bottom:24px;
-  color:var(--text);
-}
-
-/* ===== MENU ===== */
-.menu{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-
-.menu a{
-  text-decoration:none;
-  color:var(--muted);
-  padding:12px 14px;
-  border-radius:10px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  transition:.2s;
-  font-weight:500;
-}
-
-.menu a i{
-  width:20px;
-  text-align:center;
-}
-
-.menu a:hover{
-  background:#f1f5f9;
-  color:var(--text);
-}
-
-.menu a.active{
-  background:rgba(37,99,235,.1);
-  color:var(--accent);
-  font-weight:600;
-}
-
-/* ===== PROFILE ===== */
-.profile{
-  border-top:1px solid var(--border);
-  padding-top:16px;
-}
-
-.profile-name{
-  font-weight:600;
-  font-size:14px;
-  margin-bottom:4px;
-}
-
-.profile-status{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  font-size:12px;
-  color:#16a34a;
-  margin-bottom:12px;
-}
-
-.status-dot{
-  width:8px;
-  height:8px;
-  background:#22c55e;
-  border-radius:50%;
-}
-
-/* ===== LOGOUT ===== */
-.logout{
-  width:100%;
-  border:none;
-  background:rgba(220,38,38,.1);
-  color:var(--danger);
-  padding:10px;
-  border-radius:10px;
-  font-weight:600;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  transition:.2s;
-}
-
-.logout:hover{
-  background:rgba(220,38,38,.2);
-}
-
-/* ===== ROLE OWNER (optional) ===== */
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
 
 
-/* ===== MOBILE ===== */
-@media(max-width:768px){
-  .sidebar{
-    transform:translateX(-100%);
-    transition:.3s;
-    z-index:100;
-  }
-  .sidebar.show{
-    transform:translateX(0);
-  }
-}
+    /* ===== MOBILE TOGGLE BUTTON ===== */
+    .mobile-toggle {
+        display: none; /* Hidden on desktop */
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 200;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: var(--shadow-soft);
+    }
+
+    /* ===== SIDEBAR CONTAINER ===== */
+    .sidebar {
+        width: 260px;
+        background: var(--bg-sidebar);
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 24px;
+        box-shadow: var(--shadow-soft);
+        z-index: 100;
+        transition: var(--transition);
+        border-right: 1px solid var(--border-color);
+    }
+
+    /* ===== BRAND / LOGO ===== */
+    .brand {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--primary-color);
+        margin-bottom: 35px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        letter-spacing: -0.5px;
+    }
+    
+    .brand i {
+        font-size: 24px;
+    }
+
+    /* ===== NAVIGATION MENU ===== */
+    .menu {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        overflow-y: auto; /* Allow scroll if menu is too long */
+        padding-right: 5px; /* Space for scrollbar */
+    }
+
+    /* Custom Scrollbar for menu */
+    .menu::-webkit-scrollbar {
+        width: 4px;
+    }
+    .menu::-webkit-scrollbar-thumb {
+        background-color: #e5e7eb;
+        border-radius: 4px;
+    }
+
+    .menu a {
+        text-decoration: none;
+        color: var(--text-muted);
+        padding: 14px 16px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: var(--transition);
+        font-weight: 500;
+        font-size: 14px;
+        position: relative;
+    }
+
+    .menu a i {
+        width: 20px;
+        font-size: 16px;
+        transition: var(--transition);
+        color: #9ca3af;
+    }
+
+    /* Hover Effects */
+    .menu a:hover {
+        background: #f9fafb;
+        color: var(--primary-color);
+        transform: translateX(4px);
+    }
+
+    .menu a:hover i {
+        color: var(--primary-color);
+    }
+
+    /* Active State (Example class) */
+    .menu a.active {
+        background: var(--primary-light);
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    
+    .menu a.active i {
+        color: var(--primary-color);
+    }
+
+    /* ===== PROFILE SECTION ===== */
+    .profile {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    /* User Card Design */
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 15px;
+        padding: 10px;
+        background: #f8fafc;
+        border-radius: 12px;
+    }
+
+    .avatar-placeholder {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    .user-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .profile-name {
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--text-main);
+    }
+
+    .profile-status {
+        font-size: 11px;
+        color: #10b981; /* Green */
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: #ecfdf5;
+        padding: 2px 8px;
+        border-radius: 20px;
+        width: fit-content;
+        margin-top: 2px;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        background: #10b981;
+        border-radius: 50%;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+
+    /* ===== LOGOUT BUTTON ===== */
+    .logout {
+        width: 100%;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-muted);
+        padding: 12px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: var(--transition);
+    }
+
+    .logout:hover {
+        background: var(--danger-bg);
+        color: var(--danger-color);
+        border-color: var(--danger-bg);
+    }
+
+    /* ===== MAIN CONTENT AREA (Preview Placeholder) ===== */
+    
+    .dummy-content {
+        background: white;
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: var(--shadow-soft);
+        max-width: 800px;
+    }
+
+    /* ===== RESPONSIVE / MOBILE ===== */
+    @media (max-width: 768px) {
+        .mobile-toggle {
+            display: block;
+        }
+
+        .sidebar {
+            transform: translateX(-100%);
+            box-shadow: none;
+        }
+
+        .sidebar.show {
+            transform: translateX(0);
+            box-shadow: 0 0 50px rgba(0,0,0,0.2);
+        }
+
+        
+        /* Overlay when sidebar is open */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 90;
+            display: none;
+            backdrop-filter: blur(2px);
+        }
+        
+        .overlay.active {
+            display: block;
+        }
+    }
 </style>
 </head>
 
 <body>
 
-<aside class="sidebar" id="sidebar">
-  <div class="brand">Service Dashboard</div>
-
-  <nav class="menu">
-    <a href="index.html" data-page="dashboard">
-      <i class="fa-solid fa-gauge"></i> Home
-    </a>
-    <a href="https://wa.me/628888512596" target="_blank" data-page="whatsapp">
-      <i class="fa-brands fa-whatsapp"></i> WhatsApp Chat
-    </a>
-    <a href="history.html" data-page="history">
-      <i class="fa-regular fa-message"></i> Chat History
-    </a>
-    <a href="orderan.html" data-page="order">
-      <i class="fa-solid fa-clipboard-list"></i> Order History
-    </a>
-    <a href="payment-history.html" data-page="payment-history">
-      <i class="fa-solid fa-credit-card"></i> Payment History
-    </a>
-    <a href="estimasi_jasa.html" data-page="estimasi_jasa">
-      <i class="fa-solid fa-wrench"></i> Service Estimation
-    </a>
-    <a href="sparepart.html" data-page="sparepart">
-      <i class="fa-solid fa-magnifying-glass"></i> Sparepart Search
-    </a>
-    <a class="role-owner" href="reports.html" data-page="reports">
-      <i class="fa-solid fa-chart-line"></i> Reports
-    </a>
-    <a class="role-owner" href="users.html" data-page="users">
-      <i class="fa-solid fa-users"></i> User Management
-    </a>
-  </nav>
-
-  <!-- PROFILE -->
-  <div class="profile">
-  <div id="sidebarUserName" class="profile-name">Guest</div> 
-  <div class="profile-status">
-    <span class="status-dot"></span> 
-    <span class="role"><b id="user-role-display">Staff</b></span>
-  </div>
-
-</div>
-    <button id="logoutBtn" class="logout">
-      <i class="fa-solid fa-right-from-bracket"></i>
-      Logout
+    <!-- Tombol Menu Mobile (Baru ditambahkan agar responsif berfungsi) -->
+    <button class="mobile-toggle" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
     </button>
-  </div>
-</aside>
+
+    <!-- Overlay untuk Mobile -->
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <!-- Logo Area -->
+        <div class="brand">
+            <i class="fa-solid fa-layer-group"></i> 
+            ServiceDash
+        </div>
+
+        <!-- Menu Navigation -->
+        <nav class="menu">
+            <a href="index.html" data-page="dashboard">
+                <i class="fa-solid fa-gauge"></i> 
+                <span>Home</span>
+            </a>
+            
+            <a href="https://wa.me/628888512596" target="_blank" data-page="whatsapp">
+                <i class="fa-brands fa-whatsapp"></i> 
+                <span>WhatsApp Chat</span>
+            </a>
+            
+            <a href="history.html" data-page="history">
+                <i class="fa-regular fa-message"></i> 
+                <span>Chat History</span>
+            </a>
+            
+            <a href="orderan.html" data-page="order">
+                <i class="fa-solid fa-clipboard-list"></i> 
+                <span>Order History</span>
+            </a>
+            
+            <a href="payment-history.html" data-page="payment-history">
+                <i class="fa-solid fa-credit-card"></i> 
+                <span>Payment History</span>
+            </a>
+            
+            <a href="estimasi_jasa.html" data-page="estimasi_jasa">
+                <i class="fa-solid fa-wrench"></i> 
+                <span>Service Estimation</span>
+            </a>
+            
+            <a href="sparepart.html" data-page="sparepart">
+                <i class="fa-solid fa-magnifying-glass"></i> 
+                <span>Sparepart Search</span>
+            </a>
+
+            <!-- Role Owner Only -->
+            <a class="role-owner" href="reports.html" data-page="reports">
+                <i class="fa-solid fa-chart-line"></i> 
+                <span>Reports</span>
+            </a>
+            
+            <a class="role-owner" href="users.html" data-page="users">
+                <i class="fa-solid fa-users"></i> 
+                <span>User Management</span>
+            </a>
+        </nav>
+
+        <!-- Profile Section (Didesain Ulang) -->
+        <div class="profile">
+            <div class="user-info">
+                <!-- Avatar visual murni CSS -->
+                <div class="avatar-placeholder">
+                    <i class="fa-regular fa-user"></i>
+                </div>
+                <div class="user-details">
+                    <div id="sidebarUserName" class="profile-name">Guest User</div>
+                    <div class="profile-status">
+                        <span class="status-dot"></span>
+                        <span class="role" id="user-role-display">Staff</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="logoutBtn" class="logout">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                Sign Out
+            </button>
+        </div>
+    </aside>
+
+    
+
+    <!-- Script Sederhana untuk Mobile Toggle -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('active');
+        }
+
+        // Script Simulasi Active State (Opsional - Bisa dihapus jika logika ada di file lain)
+        const links = document.querySelectorAll('.menu a');
+        links.forEach(link => {
+            link.addEventListener('click', function() {
+                links.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
 
 </body>
 </html>

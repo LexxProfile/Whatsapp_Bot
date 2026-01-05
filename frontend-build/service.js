@@ -11,28 +11,94 @@ let currentCar = JSON.parse(localStorage.getItem('currentCar')) || null;
 let customerDetails = JSON.parse(localStorage.getItem('customerDetails')) || {};
 // Data Mobil (UI)
 const carData = [
-    { model: "TIGGO CROSS", image: "FOTO MOBIL/TIGGO CROSS.png" },
-    { model: "TIGGO CROSS CSH", image: "FOTO MOBIL/TIGGO CROSS CSH.png" },
-    { model: "TIGGO 5X", image: "FOTO MOBIL/TIGGO 5X.png" },
-    { model: "Tiggo 7 Luxury", image: "FOTO MOBIL/TIGGO 7 PRO.png" },
-    { model: "Tiggo 7 comfort", image: "FOTO MOBIL/TIGGO 7 PRO.png" },
-    { model: "Tiggo 7 premium", image: "FOTO MOBIL/TIGGO 7 PRO.png" },
-    { model: "Tiggo 8 Pro", image: "FOTO MOBIL/TIGGO 8 .png" },
-    { model: "Tiggo 8 Pro LUXURY", image: "FOTO MOBIL/Tiggo 8 Pro LUXURY.png" },
-    { model: "Tiggo 8 Pro MAX", image: "FOTO MOBIL/TIGGO 8 PROMAX.jpeg" },
-    { model: "Tiggo 8 CSH", image: "FOTO MOBIL/TIGGO 8 CSH.png" },
-    { model: "Tiggo 8 1.6 COMFORT", image: "FOTO MOBIL/Tiggo 8.png" },
-    { model: "Tiggo 8 1.6 PREMIUM", image: "FOTO MOBIL/Tiggo 8.png" },
-    { model: "OMODA C5 RZ", image: "FOTO MOBIL/OMODA C5.png" },
-    { model: "OMODA C5 Z", image: "FOTO MOBIL/OMODA C5.png" },
-    { model: "J6 RWD", image: "FOTO MOBIL/J6.png" },
-    { model: "J6 IWD", image: "FOTO MOBIL/J6.png" },
-    { model: "TIGGO 9 CSH", image: "FOTO MOBIL/TIGGO 9 CSH .png" },
-    { model: "OMODA 5 Z", image: "FOTO MOBIL/OMODA 5.png" },
-    { model: "OMODA 5 RZ", image: "FOTO MOBIL/OMODA 5 RZ.png" },
-    { model: "OMODA 5 GT FWD", image: "FOTO MOBIL/OMODA GT.jpeg" },
-    { model: "OMODA 5 GT AWD", image: "FOTO MOBIL/OMODA GT.jpeg" },
-    { model: "OMODA 5 EV", image: "FOTO MOBIL/OMODA EV.jpeg" },
+    { 
+        model: "TIGGO CROSS", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/tiggo/product-types/tiggo-cross/thumbnail-front-image-desktop.webp" 
+    }, // 
+    { 
+        model: "TIGGO CROSS CSH", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/product-list-nov/Tiggo-Cross-CSH.png" 
+    }, // 
+    { 
+        model: "TIGGO 5X", 
+        image: "" 
+    }, // Tidak ada data di source
+    { 
+        model: "Tiggo 7 Luxury", 
+        image: "" 
+    }, // Tidak ada data di source
+    { 
+        model: "Tiggo 7 comfort", 
+        image: "" 
+    }, // Tidak ada data di source
+    { 
+        model: "Tiggo 7 premium", 
+        image: "" 
+    }, // Tidak ada data di source
+    { 
+        model: "Tiggo 8 Pro", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/tiggo/product-types/tiggo-8/thumbnail-front-image-desktop.png" 
+    }, // Menggunakan gambar TIGGO 8 sesuai instruksi varian 
+    { 
+        model: "Tiggo 8 Pro LUXURY", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/tiggo/product-types/tiggo-8/thumbnail-front-image-desktop.png" 
+    }, // Menggunakan gambar TIGGO 8 sesuai instruksi varian 
+    { 
+        model: "Tiggo 8 Pro MAX", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/product-list-nov/Tiggo-8-Pro-Max.png" 
+    }, // 
+    { 
+        model: "Tiggo 8 CSH", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/tiggo/product-types/tiggo-8-csh/thumbnail-front-image-desktop.webp" 
+    }, // 
+    { 
+        model: "Tiggo 8 1.6 COMFORT", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/tiggo/product-types/tiggo-8/thumbnail-front-image-desktop.png" 
+    }, // Menggunakan gambar TIGGO 8 
+    { 
+        model: "Tiggo 8 1.6 PREMIUM", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/tiggo/product-types/tiggo-8/thumbnail-front-image-desktop.png" 
+    }, // Menggunakan gambar TIGGO 8 
+    { 
+        model: "OMODA C5 RZ", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/omoda/product-types/c5/c5-front-thumbnail.png" 
+    }, // Menggunakan gambar CHERY C5 
+    { 
+        model: "OMODA C5 Z", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/omoda/product-types/c5/c5-front-thumbnail.png" 
+    }, // Menggunakan gambar CHERY C5 
+    { 
+        model: "J6 RWD", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/product-list-nov/J6.png" 
+    }, // 
+    { 
+        model: "J6 IWD", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/product-list-nov/J6.png" 
+    }, // 
+    { 
+        model: "TIGGO 9 CSH", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/main-images/Tiggo%209%20CSH.png" 
+    }, // 
+    { 
+        model: "OMODA 5 Z", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/omoda/product-types/c5/c5-front-thumbnail.png" 
+    }, // Menggunakan gambar CHERY C5 
+    { 
+        model: "OMODA 5 RZ", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/omoda/product-types/c5/c5-front-thumbnail.png" 
+    }, // Menggunakan gambar CHERY C5 
+    { 
+        model: "OMODA 5 GT FWD", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/product-list-nov/Omoda-5-GT-AWD.png" 
+    }, // 
+    { 
+        model: "OMODA 5 GT AWD", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/product-list-nov/Omoda-5-GT-AWD.png" 
+    }, // 
+    { 
+        model: "OMODA 5 EV", 
+        image: "https://cheryidn.sgp1.cdn.digitaloceanspaces.com/prod/product-models/omoda/product-types/omoda-e5/thumbnail-front-image-desktop.webp" 
+    }, // Menggunakan gambar CHERY E5 
 ];
 
 // --- FUNGSI UTILITY ---

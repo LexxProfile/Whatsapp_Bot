@@ -129,7 +129,8 @@ body{
 .main{
   margin-left:260px;
   padding:32px;
-  width:100%;
+  flex: 1;
+  min-width: 0;
 }
 
 /* HEADER */
@@ -258,6 +259,24 @@ body{
 </div>
 
 <!-- SCRIPT -->
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            const response = await fetch('sidebar.html');
+            const html = await response.text();
+            document.getElementById('sidebar-container').innerHTML = html;
+            
+            const activePage = document.body.getAttribute('data-menu');
+            const activeLink = document.querySelector(`.menu a[data-page="${activePage}"]`);
+            if (activeLink) {
+                document.querySelectorAll('.menu a').forEach(el => el.classList.remove('active'));
+                activeLink.classList.add('active');
+            }
+        } catch (error) {
+            console.error('Error loading sidebar:', error);
+        }
+    });
+</script>
 <!-- 🔥 INI WAJIB -->
 <script src="service.js" defer></script>
 <script src="sidebar.js" defer></script>

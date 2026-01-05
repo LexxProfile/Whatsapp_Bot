@@ -106,7 +106,8 @@ body{
 .main{
   margin-left:260px;
   padding:24px 32px;
-  width:100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .header{
@@ -209,6 +210,15 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
       const html = await response.text();
       document.getElementById(elementId).innerHTML = html;
+
+      // Sinkronisasi menu aktif setelah sidebar dimuat
+      if (elementId === 'sidebar-container') {
+        const activePage = document.body.getAttribute('data-menu');
+        const activeLink = document.querySelector(`.menu a[data-page="${activePage}"]`);
+        if (activeLink) {
+          activeLink.classList.add('active');
+        }
+      }
     } catch (error) {
       console.error(`Error loading ${url}:`, error);
       // Tampilkan pesan error di elemen jika gagal memuat

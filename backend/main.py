@@ -241,9 +241,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
 
 @app.get("/", response_class=FileResponse)
 async def read_root():
-    index_path = FRONTEND_BUILD_DIR / "index.html"
+    index_path = FRONTEND_BUILD_DIR / "chery.html"
     if not index_path.is_file():
-        raise HTTPException(status_code=404, detail=f"File frontend 'index.html' tidak ditemukan di path: {index_path.resolve()}")
+        raise HTTPException(status_code=404, detail=f"File frontend 'chery.html' tidak ditemukan di path: {index_path.resolve()}")
     return FileResponse(index_path)
 
 class RegisterRequest(BaseModel):
@@ -289,10 +289,13 @@ async def register_request(data: RegisterRequest, request: Request):
     cursor.close()
     conn.close()
 
+    # Hash password sebelum dikirim ke n8n agar tersimpan sebagai hash di DB
+    hashed_pw = hash_password(data.password)
+
     # 4. KIRIM KE N8N (INI INTINYA 🔥)
     n8n_payload = {
         "phone_number": data.phone_number,
-        "password": data.password,
+        "password": hashed_pw,
         "ip": request.client.host,
         "user_agent": request.headers.get("user-agent")
     }
@@ -1078,7 +1081,7 @@ def format_whatsapp_id(phone: str) -> str:
 
 
 @app.post("/api/invoice/send_whatsapp")
-async def send_invoice_handler(data: InvoicePayload, current_user_phone: str = Depends(get_current_user)):
+async def send_invoice_handler(data: InvoicePayload):
     
     # [1] Validasi nomor WhatsApp
     target_phone_wa_id = format_whatsapp_id(data.customer.phone)
@@ -1087,7 +1090,54 @@ async def send_invoice_handler(data: InvoicePayload, current_user_phone: str = D
 
     # [2] Buat PDF Invoice
     try:
-        html_content = generate_invoice_html(data)
+        # --- PREPARE DATA FOR HTML GENERATOR ---
+        invoice_number = f"INV-{int(time.time())}"
+        invoice_date = datetime.now().strftime("%d %B %Y")
+        
+        # Generate Rows HTML
+        item_rows_html = ""
+        for item in data.items:
+            item_total = 0
+            price_display = ""
+            qty_display = ""
+            
+            if item.type == 'service':
+                # Logic: (Rate / 100) * Qty
+                qty = item.quantity if item.quantity else 100
+                item_total = (item.lc_per_hour / 100) * qty
+                price_display = f"Rp {item.lc_per_hour:,.0f}/100m".replace(",", ".")
+                qty_display = f"{qty/100} Jam"
+            else:
+                qty = item.quantity if item.quantity else 1
+                item_total = item.price * qty
+                price_display = f"Rp {item.price:,.0f}".replace(",", ".")
+                qty_display = f"{qty} Pcs"
+            
+            total_display = f"Rp {item_total:,.0f}".replace(",", ".")
+            
+            item_rows_html += f"""
+            <tr class="border-b border-gray-200">
+                <td class="py-2">
+                    <div class="font-medium text-gray-800">{item.name}</div>
+                    <div class="text-xs text-gray-500">{item.code}</div>
+                </td>
+                <td class="py-2 text-xs">{item.type}</td>
+                <td class="py-2 text-right text-xs">{price_display}</td>
+                <td class="py-2 text-center text-xs">{qty_display}</td>
+                <td class="py-2 text-right font-bold text-xs">{total_display}</td>
+            </tr>
+            """
+
+        html_content = generate_invoice_html(
+            invoice_number=invoice_number,
+            invoice_date=invoice_date,
+            customer=data.customer,
+            item_rows=item_rows_html,
+            subtotal=data.totals.get('subtotal', 0),
+            discount=data.totals.get('discount', 0),
+            ppn=data.totals.get('ppn', 0),
+            grand_total=data.totals.get('grand_total', 0)
+        )
         pdf_bytes = HTML(string=html_content).write_pdf()
 
         filename = f"invoice_{data.customer.phone}_{int(time.time())}.pdf"
@@ -1159,104 +1209,274 @@ def format_rupiah(amount):
     return f"Rp {amount:,.0f}".replace(",", "_").replace(".", ",").replace("_", ".")
 
 
-def generate_invoice_html(data: InvoicePayload) -> str:
-    """Merender data invoice dari Payload JSON menjadi dokumen HTML/PDF yang dicetak."""
-    
-    # Ambil data customer
-    customer = data.customer
-    
-    # Ambil data total
-    subtotal = data.totals.get('subtotal', 0)
-    grand_total = data.totals.get('grand_total', 0)
-    ppn = data.totals.get('ppn', 0)
-    
-    # Generate baris item
-    item_rows = ""
-    for item in data.items:
-        # Kalkulasi total per item (LC/100 * Menit atau Price * Pcs)
-        if item.type == 'service':
-            item_total = (item.lc_per_hour / 100) * item.quantity
-            unit_price_display = format_rupiah(item.lc_per_hour) + " /100 mnt"
-            qty_display = f"{item.quantity / 100:.2f} Jam ({item.quantity} Menit)"
-        else:
-            item_total = item.price * item.quantity
-            unit_price_display = format_rupiah(item.price) + " /pcs"
-            qty_display = f"{item.quantity} Pcs"
+def generate_invoice_html(invoice_number, invoice_date, customer, item_rows, subtotal, discount, ppn, grand_total):
+    # Helper format rupiah (jika belum ada di kode utama Anda)
+    def format_rupiah(value):
+        return f"Rp {value:,.0f}".replace(",", ".")
 
-        item_rows += f"""
-        <tr>
-            <td style="padding: 8px; border: 1px solid #ccc;">
-                <div style="font-weight: bold;">{item.name}</div>
-                <div style="font-size: 10px; color: #666;">Kode: {item.code}</div>
-            </td>
-            <td style="padding: 8px; border: 1px solid #ccc;">{data.car.get('model') or '-'}</td>
-            <td style="padding: 8px; border: 1px solid #ccc; text-align: right; font-size: 12px;">{unit_price_display}</td>
-            <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">{qty_display}</td>
-            <td style="padding: 8px; border: 1px solid #ccc; text-align: right; font-weight: bold;">{format_rupiah(item_total)}</td>
-        </tr>
-        """
+    # CSS Replacement for Tailwind (WeasyPrint compatible)
+    css_styles = """
+        @page { size: A4; margin: 0; }
+        *, ::before, ::after { box-sizing: border-box; }
+        html { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; color: #374151; }
+        body { margin: 0; background-color: #fff; }
+        
+        /* Layout Utilities */
+        .flex { display: flex; }
+        .flex-row { flex-direction: row; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .gap-6 { gap: 1.5rem; }
+        .gap-8 { gap: 2rem; }
+        
+        /* Widths */
+        .w-full { width: 100%; }
+        .w-2-3 { width: 66.666667%; }
+        .w-1-3 { width: 33.333333%; }
+        .w-3-5 { width: 60%; }
+        .w-2-5 { width: 40%; }
+        .w-1-2 { width: 50%; }
+        .w-5-12 { width: 41.666667%; }
+        .w-2-12 { width: 16.666667%; }
+        .w-1-12 { width: 8.333333%; }
+        
+        /* Spacing & Borders */
+        .p-6 { padding: 1.5rem; }
+        .p-4 { padding: 1rem; }
+        .p-3 { padding: 0.75rem; }
+        .p-2 { padding: 0.5rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mt-0-5 { margin-top: 0.125rem; }
+        
+        .border { border: 1px solid #e5e7eb; }
+        .border-b { border-bottom: 1px solid #e5e7eb; }
+        .border-t { border-top: 1px solid #e5e7eb; }
+        .border-l { border-left: 1px solid #e5e7eb; }
+        .border-l-2 { border-left: 2px solid #4f46e5; }
+        .border-gray-100 { border-color: #f3f4f6; }
+        .border-gray-200 { border-color: #e5e7eb; }
+        .rounded { border-radius: 0.25rem; }
+        
+        /* Typography */
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-base { font-size: 1rem; line-height: 1.5rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .font-bold { font-weight: 700; }
+        .font-extrabold { font-weight: 800; }
+        .font-medium { font-weight: 500; }
+        .font-light { font-weight: 300; }
+        .font-mono { font-family: monospace; }
+        .uppercase { text-transform: uppercase; }
+        .tracking-wider { letter-spacing: 0.05em; }
+        .tracking-widest { letter-spacing: 0.1em; }
+        .italic { font-style: italic; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        
+        /* Colors */
+        .text-white { color: #ffffff; }
+        .text-primary { color: #4f46e5; }
+        .text-slate-400 { color: #94a3b8; }
+        .text-slate-500 { color: #64748b; }
+        .text-slate-600 { color: #475569; }
+        .text-slate-700 { color: #334155; }
+        .text-slate-800 { color: #1e293b; }
+        .text-slate-900 { color: #0f172a; }
+        .text-red-500 { color: #ef4444; }
+        
+        .bg-white { background-color: #ffffff; }
+        .bg-primary { background-color: #4f46e5; }
+        .bg-slate-50 { background-color: #f8fafc; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-slate-900 { background-color: #0f172a; }
+        .bg-blue-600 { background-color: #2563eb; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; }
+        .invoice-box { width: 100%; max-width: 210mm; margin: 0 auto; background: white; }
+    """
 
-    # --- HTML STRUCTURE ---
     return f"""
-    <html>
-    <head>
-        <title>Invoice Estimasi</title>
-        <meta charset="UTF-8">
-        <style>
-            body {{ font-family: sans-serif; font-size: 12px; margin: 0; padding: 20px; color: #333; }}
-            .container {{ width: 100%; max-width: 700px; margin: 0 auto; border: 1px solid #eee; padding: 20px; }}
-            h1 {{ font-size: 20px; text-align: center; margin-bottom: 5px; color: #444; }}
-            h3 {{ font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }}
-            .meta {{ text-align: center; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }}
-            table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
-            th {{ background-color: #f0f0f0; border: 1px solid #ccc; padding: 8px; text-align: left; }}
-            td {{ border: 1px solid #ccc; padding: 8px; }}
-            .totals-box {{ width: 250px; margin-left: auto; margin-top: 20px; }}
-            .total-line {{ display: flex; justify-content: space-between; padding: 4px 0; }}
-            .total-final {{ font-size: 14px; font-weight: bold; border-top: 2px solid #333; padding-top: 6px; color: #6a1b9a; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="meta">
-                <h1>INVOICE ESTIMASI JASA</h1>
-                <p>No. Invoice: INV-{datetime.now().strftime('%Y%m%d%H%M%S')}</p>
-                <p>Tanggal: {datetime.now().strftime('%d %B %Y')}</p>
-            </div>
-            
-            <div style="margin-bottom: 20px;">
-                <h3>Detail Pelanggan:</h3>
-                <div style="line-height: 1.5;">
-                    Nama: <strong>{customer.name or '-'}</strong> | 
-                    Plat BK: <strong>{customer.plate or '-'}</strong> | 
-                    No. HP: <strong>{customer.phone or '-'}</strong>
-                    <br>Catatan: {customer.note or '-'}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {invoice_number}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        {css_styles}
+    </style>
+</head>
+<body>
+    <div class="invoice-box">
+        <!-- HEADER -->
+        <div class="flex flex-row border-b border-gray-100">
+            <!-- Left: Brand -->
+            <div class="w-2-3 p-6 bg-white flex flex-col justify-center">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 bg-primary rounded flex items-center justify-center text-white text-base" style="width: 32px; height: 32px; display:flex; align-items:center; justify-content:center;">
+                        <span style="font-size: 16px;">EP</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-extrabold text-slate-900 tracking-tight" style="margin:0;">ENDLESS PROJECT</h1>
+                        <p class="text-xs text-primary font-bold uppercase tracking-widest mt-0-5" style="font-size: 10px;">Automotive Solutions</p>
+                    </div>
+                </div>
+                
+                <div class="text-xs text-slate-500">
+                    <p class="font-bold text-slate-700" style="margin:0;">Kantor Pusat & Workshop:</p>
+                    <p style="margin:0;">Jl. Otomotif Raya No. 88, Kawasan Industri, Medan 20111</p>
+                    <div class="flex gap-4 mt-1" style="font-size: 11px;">
+                        <p style="margin:0;">support@endlessproject.com</p>
+                        <p style="margin:0;">+62 812-3456-7890</p>
+                    </div>
                 </div>
             </div>
 
-            <div style="margin-bottom: 20px;">
-                <h3>Detail Layanan:</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 40%;">Layanan</th>
-                            <th style="width: 15%;">Model Mobil</th>
-                            <th style="width: 20%; text-align: right;">Harga Satuan</th>
-                            <th style="width: 10%; text-align: center;">Qty</th>
-                            <th style="width: 15%; text-align: right;">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>{item_rows}</tbody>
-                </table>
-            </div>
-
-            <div class="totals-box">
-                <div class="total-line"><span>Subtotal:</span> <span>{format_rupiah(subtotal)}</span></div>
-                <div class="total-line"><span>Diskon:</span> <span>{format_rupiah(0)}</span></div>
-                <div class="total-line"><span>PPN (11%):</span> <span>{format_rupiah(ppn)}</span></div>
-                <div class="total-final total-line"><span>TOTAL:</span> <span>{format_rupiah(grand_total)}</span></div>
+            <!-- Right: Invoice Meta -->
+            <div class="w-1-3 bg-primary p-6 text-white flex flex-col justify-center">
+                <h2 class="text-2xl font-light mb-3" style="opacity: 0.9; margin-top:0;">INVOICE</h2>
+                
+                <div class="text-sm">
+                    <div class="mb-2">
+                        <p class="text-xs uppercase" style="opacity: 0.7; font-weight: 600; margin:0;">Nomor Referensi</p>
+                        <p class="text-base font-bold font-mono" style="margin:0;">{invoice_number}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase" style="opacity: 0.7; font-weight: 600; margin:0;">Tanggal Terbit</p>
+                        <p class="font-medium text-sm" style="margin:0;">{invoice_date}</p>
+                    </div>
+                </div>
             </div>
         </div>
-    </body>
-    </html>
-    """
+
+        <!-- CUSTOMER & VEHICLE DETAILS -->
+        <div class="p-6 border-b border-gray-100 bg-slate-50">
+            <div class="flex flex-row gap-6">
+                <!-- Bill To -->
+                <div class="w-1-2">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Informasi Pelanggan</h3>
+                    <div class="border-l-2" style="padding-left: 0.75rem;">
+                        <p class="text-sm font-bold text-slate-800" style="margin:0;">{getattr(customer, 'name', '-')}</p>
+                        <p class="text-xs text-slate-600 mt-0-5" style="margin:0;">{getattr(customer, 'phone', '-')}</p>
+                        <p class="text-xs text-slate-400 mt-0-5" style="font-size: 10px; margin:0;">ID: {getattr(customer, 'id', 'CUST-REG-2024')}</p>
+                    </div>
+                </div>
+
+                <!-- Vehicle Info -->
+                <div class="w-1-2">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Detail Kendaraan</h3>
+                    <div class="bg-white rounded border border-gray-200 p-2 flex gap-3 items-center">
+                        <div class="text-center" style="min-width: 80px;">
+                            <span class="text-xs text-slate-500 block uppercase" style="font-size: 9px;">Plat Nomor</span>
+                            <span class="text-xs font-bold font-mono text-slate-800 bg-gray-100 px-2 rounded block mt-0-5" style="padding-top:2px; padding-bottom:2px;">{getattr(customer, 'plate', '-')}</span>
+                        </div>
+                        <div class="border-l border-gray-100" style="padding-left: 0.75rem;">
+                            <span class="text-xs text-slate-500 block uppercase" style="font-size: 9px;">Catatan</span>
+                            <p class="text-xs text-slate-600 italic" style="margin:0;">{getattr(customer, 'note', '-')}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="px-6 py-2" style="min-height: 150px;">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="py-2 text-xs font-bold text-primary uppercase tracking-wider w-5-12">Deskripsi Layanan</th>
+                        <th class="py-2 text-xs font-bold text-primary uppercase tracking-wider w-2-12">Tipe</th>
+                        <th class="py-2 text-xs font-bold text-primary uppercase tracking-wider w-2-12 text-right">Harga</th>
+                        <th class="py-2 text-xs font-bold text-primary uppercase tracking-wider w-1-12 text-center">Qty</th>
+                        <th class="py-2 text-xs font-bold text-primary uppercase tracking-wider w-2-12 text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="text-xs text-slate-600">
+                    {item_rows}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- BOTTOM SECTION -->
+        <div class="bg-gray-50 p-6 border-t border-gray-200">
+            <div class="flex flex-row gap-8">
+                
+                <!-- Left: Info & Terms -->
+                <div class="w-3-5">
+                    <!-- Bank Info -->
+                    <div class="flex items-center gap-3 bg-white border border-gray-200 p-3 rounded mb-4">
+                        <div class="bg-blue-600 text-white font-bold text-xs px-2 rounded" style="padding-top:2px; padding-bottom:2px;">BCA</div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800" style="margin:0;">8820-1234-5678</p>
+                            <p class="text-xs text-slate-500" style="font-size: 10px; margin:0;">a.n Endless Project Official</p>
+                        </div>
+                    </div>
+
+                    <!-- Terms -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase mb-1" style="font-size: 10px;">Ketentuan</h4>
+                        <ul class="text-slate-500" style="font-size: 9px; padding-left: 1.5rem; margin:0;">
+                            <li>Dokumen ini merupakan estimasi biaya, bukan bukti pembayaran lunas.</li>
+                            <li>Harga suku cadang dapat berubah mengikuti harga pasar.</li>
+                            <li>Garansi servis berlaku 7 hari setelah penyerahan.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Right: Totals -->
+                <div class="w-2-5">
+                    <div class="bg-white p-4 rounded border border-gray-100 mb-4">
+                        <div class="flex justify-between items-center mb-1 text-xs">
+                            <span class="text-slate-500">Subtotal</span>
+                            <span class="font-bold text-slate-800">{format_rupiah(subtotal)}</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-1 text-xs text-red-500">
+                            <span>Diskon</span>
+                            <span class="font-bold">- {format_rupiah(discount)}</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-2 text-xs text-slate-500">
+                            <span>PPN (11%)</span>
+                            <span class="font-bold">{format_rupiah(ppn)}</span>
+                        </div>
+                        
+                        <div class="border-t border-gray-200" style="margin: 0.5rem 0; border-style: dashed;"></div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-900 uppercase">Total</span>
+                            <span class="text-lg font-extrabold text-primary">{format_rupiah(grand_total)}</span>
+                        </div>
+                    </div>
+
+                    <!-- Signature -->
+                    <div class="text-center">
+                        <p class="text-slate-400 mb-6" style="font-size: 10px;">Disetujui Oleh,</p>
+                        <div class="border-t border-slate-300" style="width: 50%; margin: 0 auto; padding-top: 4px;">
+                            <p class="font-bold text-slate-700" style="font-size: 10px;">Endless Management</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-slate-900 text-slate-400 py-2 px-4 text-center" style="font-size: 9px;">
+            <p style="margin:0;">&copy; 2024 Endless Project Automotive. All Rights Reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+"""

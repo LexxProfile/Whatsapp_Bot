@@ -37,7 +37,8 @@
         .main {
             margin-left: 260px;
             padding: 24px 32px;
-            width: 100%;
+            flex: 1;
+            min-width: 0;
         }
         
         /* HEADER */
@@ -258,6 +259,25 @@
     <script src="sidebar.js"></script>
     <script src="service.js"></script>
     <script> /* Removed duplicate toggleSidebar function */
+        // Load Sidebar secara dinamis
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('sidebar.html');
+                const html = await response.text();
+                document.getElementById('sidebar-container').innerHTML = html;
+                
+                // Sinkronisasi menu aktif
+                const activePage = document.body.getAttribute('data-menu');
+                const activeLink = document.querySelector(`.menu a[data-page="${activePage}"]`);
+                if (activeLink) {
+                    document.querySelectorAll('.menu a').forEach(el => el.classList.remove('active'));
+                    activeLink.classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error loading sidebar:', error);
+            }
+        });
+
         // Modal functionality
         const modal = document.getElementById('chatDetailModal');
         const closeButton = document.querySelector('.close-button');
