@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+node_modules/
+mysql-data/
+n8n-processor-data/
+frontend-build/invoices/*.pdf
+.venv/
+venv/
+env/

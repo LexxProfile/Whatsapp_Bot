@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Analisis Sparepart</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS untuk baca/tulis Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#4F46E5', // Indigo 600
+                        secondary: '#64748B', // Slate 500
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        surface: '#FFFFFF',
+                        background: '#F1F5F9',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: var(--background); }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        
+        .loading-overlay {
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(4px);
+        }
+        
+        /* Penyesuaian Layout Sidebar */
+        .main-content-area {
+            margin-left: 260px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Tooltip custom simple */
+        .tooltip-btn { position: relative; }
+        .tooltip-btn:hover::after {
+            content: attr(data-title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 8px;
+            background: #1e293b;
+            color: white;
+            font-size: 11px;
+            border-radius: 4px;
+            white-space: nowrap;
+            margin-bottom: 6px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content-area {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body data-menu="reports" class="text-slate-800 antialiased bg-slate-100">
+
+    <div class="flex h-screen overflow-hidden" id="app-wrapper">
+        <!-- Sidebar Container -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content -->
+        <div class="main-content-area flex flex-col min-w-0 overflow-hidden">
+            
+            <!-- Header -->
+            <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <button onclick="toggleSidebar()" class="lg:hidden text-slate-500 hover:text-indigo-600 transition">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    
+                    <div class="flex items-center gap-4 ml-auto">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-sm font-semibold text-slate-800" id="headerUserName">Admin Gudang</p>
+                            <p class="text-xs text-slate-500">Role: <b>Owner</b></p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-sm">
+                            AG
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Scrollable Area -->
+            <main class="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
+                
+                <!-- Upload Section -->
+                <div class="glass-card rounded-2xl p-6 mb-8 relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <h2 class="text-lg font-bold text-slate-800 mb-2">Upload Data Penjualan</h2>
+                        <p class="text-slate-500 text-sm mb-6">Pastikan format tanggal <strong>Hari/Bulan/Tahun (DD/MM/YYYY)</strong>. Sistem akan otomatis mendeteksi format angka 330.000 sebagai 330 ribu.</p>
+                        
+                        <label class="flex w-full flex-col items-center px-4 py-6 bg-slate-50 text-slate-500 rounded-xl border-2 border-dashed border-slate-300 cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl mb-2 text-slate-400"></i>
+                            <span class="text-sm font-medium" id="fileName">Klik untuk pilih file Excel</span>
+                            <input type='file' class="hidden" id="excelInput" accept=".xlsx, .xls" onchange="handleFileUpload(this)" />
+                        </label>
+                    </div>
+                    
+                    <!-- Loading Indicator -->
+                    <div id="loading" class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center loading-overlay rounded-2xl">
+                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-3"></div>
+                        <span class="text-sm font-medium text-indigo-600">Menganalisis Data...</span>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Total Revenue -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Pendapatan</p>
+                        <h3 class="text-2xl font-bold text-slate-800 mt-1" id="statRevenue">Rp 0</h3>
+                        <div class="text-xs text-slate-400 mt-1">Netto (Bersih)</div>
+                    </div>
+
+                    <!-- Total Qty Sold -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Item Terjual</p>
+                        <h3 class="text-2xl font-bold text-slate-800 mt-1" id="statQty">0</h3>
+                        <div class="text-xs text-slate-400 mt-1">Unit</div>
+                    </div>
+
+                    <!-- Total Returns -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Retur</p>
+                        <h3 class="text-2xl font-bold text-rose-600 mt-1" id="statRetur">0</h3>
+                        <div class="text-xs text-rose-400 mt-1" id="statReturVal">Rp 0</div>
+                    </div>
+
+                    <!-- Best Month -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Bulan Terbaik</p>
+                        <h3 class="text-xl font-bold text-slate-800 mt-1" id="statBestMonth">-</h3>
+                        <div class="text-xs text-slate-400 mt-1">Volume Penjualan</div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    
+                    <!-- Line Chart: Customer Trends -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <div class="flex flex-wrap justify-between items-end gap-4 mb-6">
+                            <div>
+                                <h3 class="font-bold text-slate-800">Trend Penjualan Bulanan</h3>
+                                <p class="text-xs text-slate-500">Grafik kenaikan/penurunan penjualan per bulan</p>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <!-- Tombol Template (Import) - Hijau -->
+                                <button onclick="downloadTemplate()" class="tooltip-btn w-9 h-9 flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition shadow-sm" data-title="Download Template (Import)">
+                                    <i class="fa-solid fa-file-excel"></i>
+                                </button>
+                                
+                                <!-- Tombol Export Report - Merah -->
+                                <button onclick="exportReport()" class="tooltip-btn w-9 h-9 flex items-center justify-center bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition shadow-sm" data-title="Export Laporan">
+                                    <i class="fa-solid fa-file-export"></i>
+                                </button>
+                                
+                                <div class="w-px h-6 bg-slate-200 mx-1"></div>
+
+                                <select id="customerFilter" onchange="filterChart()" class="text-xs border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-medium text-slate-600 shadow-sm cursor-pointer">
+                                    <option value="all">Semua Customer</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="h-72 relative w-full">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Top 20 List -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col h-[460px]">
+                        <div class="flex-shrink-0 mb-4">
+                            <h3 class="font-bold text-slate-800">
+                                <i class="fa-solid fa-crown text-amber-500 mr-2"></i> Top 20 Sparepart
+                            </h3>
+                            <p class="text-xs text-slate-500">Item paling laku (Qty)</p>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                            <ul id="topProductsList" class="space-y-2">
+                                <li class="text-center text-slate-400 text-sm py-10">Belum ada data</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Monthly Summary Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <h3 class="font-bold text-slate-800">Ringkasan Penjualan Per Bulan</h3>
+                        <p class="text-xs text-slate-500">Rekapitulasi total omzet dan qty berdasarkan bulan</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                                <tr>
+                                    <th class="px-6 py-3">Bulan & Tahun</th>
+                                    <th class="px-6 py-3 text-center">Total Transaksi (Qty)</th>
+                                    <th class="px-6 py-3 text-right">Total Pendapatan (Gross)</th>
+                                    <th class="px-6 py-3 text-right">Total Diskon</th>
+                                    <th class="px-6 py-3 text-right font-bold">Pendapatan Bersih</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthlySummaryBody" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="5" class="px-6 py-8 text-center text-slate-400">Menunggu data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Data Preview Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100">
+                        <h3 class="font-bold text-slate-800">Data Transaksi (Preview 10 Terakhir)</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                                <tr>
+                                    <th class="px-6 py-3">Tanggal</th>
+                                    <th class="px-6 py-3">Customer</th>
+                                    <th class="px-6 py-3">Part No.</th>
+                                    <th class="px-6 py-3">Part Name</th>
+                                    <th class="px-6 py-3 text-right">Qty</th>
+                                    <th class="px-6 py-3 text-right">Harga Satuan</th>
+                                    <th class="px-6 py-3 text-right text-rose-500">Diskon</th>
+                                    <th class="px-6 py-3 text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="8" class="px-6 py-8 text-center text-slate-400">Upload file Excel untuk melihat data</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL VARIABLES ---
+        let rawData = [];
+        let chartInstance = null;
+        let chartColors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+        
+        // --- LOAD SIDEBAR ---
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('sidebar.html');
+                const html = await response.text();
+                document.getElementById('sidebar-container').innerHTML = html;
+                
+                // Sinkronisasi menu aktif
+                const activePage = document.body.getAttribute('data-menu');
+                const activeLink = document.querySelector(`.menu a[data-page="${activePage}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error loading sidebar:', error);
+            }
+        });
+
+        // --- UI FUNCTIONS ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (sidebar) sidebar.classList.toggle('show');
+            if (overlay) overlay.classList.toggle('active');
+        }
+
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+        }
+
+        // --- EXPORT REPORT FUNCTION (NEW) ---
+        function exportReport() {
+            if (!rawData || rawData.length === 0) {
+                alert("Belum ada data untuk diekspor. Silakan upload file Excel terlebih dahulu.");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+
+            // --- SHEET 1: LAPORAN ANALISIS ---
+            let analysisData = [];
+
+            // Header
+            analysisData.push(["LAPORAN ANALISIS PENJUALAN SPAREPART"]);
+            analysisData.push(["Tanggal Cetak:", new Date().toLocaleString('id-ID')]);
+            analysisData.push([]); 
+
+            // 1. Ringkasan Performa
+            analysisData.push(["1. RINGKASAN PERFORMA"]);
+            analysisData.push(["Total Pendapatan (Bersih)", "Total Item Terjual", "Total Retur (Qty)", "Nilai Retur"]);
+            
+            let totalRevenue = 0, totalQty = 0, totalReturQty = 0, totalReturValue = 0;
+            rawData.forEach(d => {
+                if(d.isReturn) {
+                    totalReturQty += Math.abs(d.qty);
+                    totalReturValue += Math.abs(d.total);
+                    totalRevenue += d.total; 
+                } else {
+                    totalQty += d.qty;
+                    totalRevenue += d.total;
+                }
+            });
+            analysisData.push([totalRevenue, totalQty, totalReturQty, totalReturValue]);
+            analysisData.push([]);
+
+            // 2. Ringkasan Bulanan (Data Chart)
+            analysisData.push(["2. DATA PENJUALAN BULANAN (Dasar Grafik)"]);
+            analysisData.push(["Bulan", "Total Qty", "Gross Sales", "Total Diskon", "Net Sales"]);
+            
+            const summary = {};
+            rawData.forEach(d => {
+                if(!summary[d.monthKey]) {
+                    summary[d.monthKey] = { sortKey: d.sortKey, qty: 0, gross: 0, discount: 0, net: 0 };
+                }
+                summary[d.monthKey].qty += d.qty;
+                summary[d.monthKey].gross += (d.qty * d.price);
+                summary[d.monthKey].discount += d.discount;
+                summary[d.monthKey].net += d.total;
+            });
+            const sortedSummary = Object.entries(summary)
+                .map(([key, val]) => ({ month: key, ...val }))
+                .sort((a, b) => a.sortKey - b.sortKey);
+
+            sortedSummary.forEach(row => {
+                analysisData.push([row.month, row.qty, row.gross, row.discount, row.net]);
+            });
+            analysisData.push([]);
+
+            // 3. Top 20 Sparepart
+            analysisData.push(["3. TOP 20 SPAREPART TERLARIS"]);
+            analysisData.push(["Peringkat", "Part Number", "Nama Part", "Total Terjual (Qty)"]);
+            
+            const partMap = {};
+            rawData.forEach(d => {
+                if(!d.isReturn) {
+                    const key = d.partNumber !== '-' ? d.partNumber : d.partName;
+                    if(!partMap[key]) partMap[key] = { name: d.partName, number: d.partNumber, qty: 0 };
+                    partMap[key].qty += d.qty;
+                }
+            });
+            const sortedParts = Object.values(partMap).sort((a, b) => b.qty - a.qty).slice(0, 20);
+            
+            sortedParts.forEach((p, i) => {
+                analysisData.push([i+1, p.number, p.name, p.qty]);
+            });
+
+            const ws1 = XLSX.utils.aoa_to_sheet(analysisData);
+            XLSX.utils.book_append_sheet(wb, ws1, "Laporan Analisis");
+
+            // --- SHEET 2: DATA MENTAH ---
+            const cleanRawData = rawData.map(d => ({
+                Tanggal: d.date,
+                Bulan: d.monthKey,
+                Customer: d.customer,
+                PartNumber: d.partNumber,
+                PartName: d.partName,
+                Qty: d.qty,
+                HargaSatuan: d.price,
+                Diskon: d.discount,
+                Total: d.total,
+                Status: d.isReturn ? 'RETUR' : 'OK'
+            }));
+            
+            const ws2 = XLSX.utils.json_to_sheet(cleanRawData);
+            XLSX.utils.book_append_sheet(wb, ws2, "Data Mentah");
+
+            // Download File
+            XLSX.writeFile(wb, "Laporan_Lengkap_Sparepart.xlsx");
+        }
+
+
+        // --- HELPER: PARSING ---
+        function parseIndonesianDate(input) {
+            if (!input) return new Date();
+            if (input instanceof Date) return input;
+            if (typeof input === 'string') {
+                const parts = input.split('/');
+                if (parts.length === 3) {
+                    return new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+            }
+            return new Date(input);
+        }
+
+        function parseIndonesianNumber(input) {
+            if (typeof input === 'number') return input;
+            if (!input) return 0;
+            if (typeof input === 'string') {
+                let clean = input.replace(/\./g, '');
+                clean = clean.replace(/,/g, '.');
+                return parseInt(clean) || 0;
+            }
+            return 0;
+        }
+
+        // --- EXCEL TEMPLATE GENERATOR ---
+        function downloadTemplate() {
+            const wb = XLSX.utils.book_new();
+            const ws_data = [
+                ["TANGGAL", "CUSTOMER_TYPE", "PART_NUMBER", "PART_NAME", "QTY", "HARGA", "DISKON"], 
+                ["01/01/2024", "Retail", "A-001", "Kampas Rem Depan", 10, 50000, 5000],
+                ["15/01/2024", "Bengkel", "B-005", "Oli MPX 1", 25, 45000, 0],
+                ["02/02/2024", "Online", "C-010", "Spion Kanan", -1, 35000, 0],
+                ["10/02/2024", "Grosir", "A-002", "Kampas Rem Belakang", 50, 48000, 20000]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, ws, "Template");
+            XLSX.writeFile(wb, "Template_Penjualan_Sparepart_V3.xlsx");
+        }
+
+        // --- MAIN LOGIC: FILE HANDLING ---
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').innerText = file.name;
+            document.getElementById('loading').classList.remove('hidden');
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array', cellDates: false}); 
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {raw: true}); 
+                processData(jsonData);
+                setTimeout(() => {
+                    document.getElementById('loading').classList.add('hidden');
+                }, 500);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- CORE LOGIC: DATA PROCESSING ---
+        function processData(data) {
+            rawData = data.map(row => {
+                const getVal = (key) => row[key] || row[key.toUpperCase()] || row[key.toLowerCase()] || '';
+
+                const dateRaw = getVal('TANGGAL') || getVal('Tanggal');
+                const qtyRaw = getVal('QTY') || getVal('Qty');
+                const priceRaw = getVal('HARGA') || getVal('Harga');
+                const discountRaw = getVal('DISKON') || getVal('Diskon') || 0;
+                
+                const dateObj = parseIndonesianDate(dateRaw);
+                const qty = parseIndonesianNumber(qtyRaw);
+                const price = parseIndonesianNumber(priceRaw);
+                const discount = parseIndonesianNumber(discountRaw);
+
+                const subtotal = qty * price;
+                const total = subtotal - discount;
+
+                return {
+                    date: dateObj,
+                    monthKey: dateObj.toLocaleString('id-ID', { month: 'long', year: 'numeric' }), 
+                    sortKey: dateObj.getFullYear() * 100 + (dateObj.getMonth() + 1),
+                    customer: getVal('CUSTOMER_TYPE') || getVal('Customer') || 'Umum',
+                    partNumber: getVal('PART_NUMBER') || getVal('Part Number') || getVal('Kode Part') || '-',
+                    partName: getVal('PART_NAME') || getVal('Nama Part') || getVal('Part Name') || 'Unknown',
+                    qty: qty,
+                    price: price,
+                    discount: discount,
+                    total: total,
+                    isReturn: qty < 0
+                };
+            });
+
+            rawData.sort((a, b) => a.date - b.date);
+
+            // 1. Calculate Stats
+            let totalRevenue = 0;
+            let totalQty = 0;
+            let totalReturQty = 0;
+            let totalReturValue = 0;
+
+            rawData.forEach(d => {
+                if(d.isReturn) {
+                    totalReturQty += Math.abs(d.qty);
+                    totalReturValue += Math.abs(d.total);
+                    totalRevenue += d.total; 
+                } else {
+                    totalQty += d.qty;
+                    totalRevenue += d.total;
+                }
+            });
+
+            document.getElementById('statRevenue').innerText = formatRupiah(totalRevenue);
+            document.getElementById('statQty').innerText = totalQty.toLocaleString('id-ID');
+            document.getElementById('statRetur').innerText = totalReturQty;
+            document.getElementById('statReturVal').innerText = `Nilai: ${formatRupiah(totalReturValue)}`;
+
+            // 2. Logic lainnya
+            calculateTopProducts();
+            populateCustomerFilter();
+            updateChart('all');
+            updateTablePreview();
+            calculateBestMonth();
+            generateMonthlySummary(); 
+        }
+
+        function generateMonthlySummary() {
+            const summary = {};
+            rawData.forEach(d => {
+                if(!summary[d.monthKey]) {
+                    summary[d.monthKey] = { sortKey: d.sortKey, qty: 0, gross: 0, discount: 0, net: 0 };
+                }
+                summary[d.monthKey].qty += d.qty;
+                summary[d.monthKey].gross += (d.qty * d.price);
+                summary[d.monthKey].discount += d.discount;
+                summary[d.monthKey].net += d.total;
+            });
+            const sortedSummary = Object.entries(summary).map(([key, val]) => ({ month: key, ...val })).sort((a, b) => a.sortKey - b.sortKey);
+            const tbody = document.getElementById('monthlySummaryBody');
+            tbody.innerHTML = '';
+            sortedSummary.forEach(row => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="px-6 py-4 font-medium text-slate-800">${row.month}</td>
+                        <td class="px-6 py-4 text-center"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">${row.qty}</span></td>
+                        <td class="px-6 py-4 text-right text-slate-500">${formatRupiah(row.gross)}</td>
+                        <td class="px-6 py-4 text-right text-rose-500">${formatRupiah(row.discount)}</td>
+                        <td class="px-6 py-4 text-right font-bold text-slate-800">${formatRupiah(row.net)}</td>
+                    </tr>`;
+            });
+        }
+
+        function calculateTopProducts() {
+            const partMap = {};
+            rawData.forEach(d => {
+                if(!d.isReturn) {
+                    const key = d.partNumber !== '-' ? d.partNumber : d.partName;
+                    if(!partMap[key]) { partMap[key] = { name: d.partName, number: d.partNumber, qty: 0 }; }
+                    partMap[key].qty += d.qty;
+                }
+            });
+            const sortedParts = Object.values(partMap).sort((a, b) => b.qty - a.qty).slice(0, 20);
+            const listEl = document.getElementById('topProductsList');
+            listEl.innerHTML = '';
+            sortedParts.forEach((p, idx) => {
+                const colorClass = idx < 3 ? 'text-amber-500' : 'text-slate-400';
+                listEl.innerHTML += `
+                    <li class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition border-b border-slate-50 last:border-0">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <span class="w-6 text-center font-bold ${colorClass}">${idx+1}</span>
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold text-indigo-600 bg-indigo-50 inline-block px-1 rounded mb-0.5">${p.number}</div>
+                                <div class="text-sm font-medium text-slate-700 truncate block w-full" title="${p.name}">${p.name}</div>
+                            </div>
+                        </div>
+                        <div class="text-sm font-bold text-slate-700 pl-2">${p.qty} <span class="text-xs text-slate-400 font-normal">pcs</span></div>
+                    </li>`;
+            });
+        }
+
+        function updateChart(customerType) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            const uniqueMonths = [];
+            const monthMap = new Set();
+            rawData.forEach(d => {
+                if(!monthMap.has(d.monthKey)) { monthMap.add(d.monthKey); uniqueMonths.push(d.monthKey); }
+            });
+            
+            let datasets = [];
+            if(customerType === 'all') {
+                const types = [...new Set(rawData.map(d => d.customer))];
+                types.forEach((type, idx) => {
+                    const dataPoints = uniqueMonths.map(m => {
+                        return rawData.filter(d => d.monthKey === m && d.customer === type && !d.isReturn).reduce((sum, curr) => sum + curr.qty, 0);
+                    });
+                    datasets.push({ label: type, data: dataPoints, borderColor: chartColors[idx % chartColors.length], backgroundColor: 'transparent', tension: 0.4, borderWidth: 2 });
+                });
+            } else {
+                const dataPoints = uniqueMonths.map(m => {
+                    return rawData.filter(d => d.monthKey === m && d.customer === customerType && !d.isReturn).reduce((sum, curr) => sum + curr.qty, 0);
+                });
+                datasets.push({ label: customerType, data: dataPoints, borderColor: '#4F46E5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.4 });
+            }
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: uniqueMonths, datasets: datasets },
+                options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom' }, tooltip: { backgroundColor: 'rgba(255, 255, 255, 0.95)', titleColor: '#1e293b', bodyColor: '#475569', borderColor: '#e2e8f0', borderWidth: 1, padding: 10, displayColors: true } }, scales: { y: { beginAtZero: true, grid: { borderDash: [2, 4], color: '#f1f5f9' } }, x: { grid: { display: false } } } }
+            });
+        }
+
+        function populateCustomerFilter() {
+            const types = [...new Set(rawData.map(d => d.customer))];
+            const select = document.getElementById('customerFilter');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="all">Semua Customer</option>';
+            types.forEach(t => { select.innerHTML += `<option value="${t}">${t}</option>`; });
+            if(types.includes(currentVal)) select.value = currentVal;
+        }
+
+        function filterChart() { updateChart(document.getElementById('customerFilter').value); }
+
+        function calculateBestMonth() {
+             const monthMap = {};
+             rawData.forEach(d => {
+                 if(!d.isReturn) { if(!monthMap[d.monthKey]) monthMap[d.monthKey] = 0; monthMap[d.monthKey] += d.qty; }
+             });
+             let bestMonth = '-'; let maxQty = 0;
+             for (const [m, q] of Object.entries(monthMap)) { if(q > maxQty) { maxQty = q; bestMonth = m; } }
+             document.getElementById('statBestMonth').innerText = bestMonth;
+        }
+
+        function updateTablePreview() {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            const recentData = rawData.slice(0, 10);
+            recentData.forEach(d => {
+                const totalFormatted = formatRupiah(d.total);
+                const hargaFormatted = formatRupiah(d.price);
+                const diskonFormatted = d.discount > 0 ? formatRupiah(d.discount) : '-';
+                const isReturClass = d.isReturn ? 'text-rose-600 bg-rose-50' : 'text-slate-600';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-50 last:border-0">
+                        <td class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">${d.date.toLocaleDateString('id-ID')}</td>
+                        <td class="px-6 py-4">${d.customer}</td>
+                        <td class="px-6 py-4 font-mono text-xs">${d.partNumber}</td>
+                        <td class="px-6 py-4">${d.partName}</td>
+                        <td class="px-6 py-4 text-right"><span class="${isReturClass} px-2 py-1 rounded text-xs font-bold">${d.qty}</span></td>
+                        <td class="px-6 py-4 text-right text-slate-500 text-xs">${hargaFormatted}</td>
+                        <td class="px-6 py-4 text-right text-rose-500 text-xs">${diskonFormatted}</td>
+                        <td class="px-6 py-4 text-right font-mono text-xs font-bold text-slate-700">${totalFormatted}</td>
+                    </tr>`;
+            });
+        }
+    </script>
+</body>
+</html>

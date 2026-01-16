@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Endless Project</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- ✅ TURNSTILE CALLBACK (DIPERTAHANKAN) -->
+    <script>
+        window.captchaToken = null;
+
+        window.onTurnstileSuccess = function (token) {
+            window.captchaToken = token;
+            console.log("Turnstile token diterima:", token);
+        };
+    </script>
+
+    <!-- ✅ LOAD TURNSTILE -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Style (Disamakan dengan Login Light Theme) -->
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+        .login-card {
+            background: #ffffff;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+        }
+        .input-field {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+            transition: all 0.3s ease;
+        }
+        .input-field::placeholder {
+            color: #94a3b8;
+        }
+        .input-field:focus {
+            background: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            outline: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+        .input-icon {
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body class="h-full flex items-center justify-center p-6">
+
+    <div class="login-card rounded-3xl p-8 w-full max-w-md my-8">
+
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-50 rounded-2xl mb-3 border border-blue-100">
+                <i class="fa-solid fa-user-plus text-blue-600 text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Buat Akun</h1>
+            <p class="text-slate-500 mt-1 text-sm">Bergabunglah dengan Endless Project</p>
+        </div>
+
+        <form id="registerForm" class="space-y-4">
+
+            <div>
+                <label class="block text-slate-700 text-sm font-semibold mb-1.5 ml-1">Nama Lengkap</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 input-icon">
+                        <i class="fas fa-user text-sm"></i>
+                    </span>
+                    <input type="text" id="fullName"
+                           class="input-field w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-400 font-medium"
+                           placeholder="Nama Anda" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-slate-700 text-sm font-semibold mb-1.5 ml-1">Nomor WhatsApp</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 input-icon">
+                        <i class="fas fa-phone text-sm"></i>
+                    </span>
+                    <input type="text" id="phoneNumber"
+                           class="input-field w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-400 font-medium"
+                           placeholder="08xxxxxxxxxx" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-slate-700 text-sm font-semibold mb-1.5 ml-1">Password</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 input-icon">
+                        <i class="fas fa-lock text-sm"></i>
+                    </span>
+                    <input type="password" id="password"
+                           class="input-field w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-400 font-medium"
+                           placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-slate-700 text-sm font-semibold mb-1.5 ml-1">Konfirmasi Password</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 input-icon">
+                        <i class="fas fa-check-circle text-sm"></i>
+                    </span>
+                    <input type="password" id="confirmPassword"
+                           class="input-field w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-400 font-medium"
+                           placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <!-- ✅ CAPTCHA (CALLBACK AKTIF, TEMA LIGHT) -->
+            <div class="flex justify-center pt-2">
+                <div class="cf-turnstile"
+                     data-sitekey="0x4AAAAAACHMnsUfcqFy4Qot"
+                     data-callback="onTurnstileSuccess"
+                     data-theme="light">
+                </div>
+            </div>
+
+            <button type="submit"
+                    class="btn-primary w-full text-white font-bold rounded-xl py-3.5 mt-2 shadow-lg shadow-blue-500/30">
+                Daftar Sekarang
+            </button>
+        </form>
+
+        <div class="mt-6 pt-5 border-t border-slate-100 text-center">
+            <p class="text-slate-500 text-sm">
+                Sudah punya akun?
+                <a href="login.html" class="text-blue-600 font-bold hover:text-blue-700 transition-colors">
+                    Login disini
+                </a>
+            </p>
+        </div>
+
+        <!-- Pesan Error / Sukses disesuaikan dengan tema terang -->
+        <p id="errorMessage" class="hidden mt-4 p-3 bg-red-50 border border-red-100 rounded-xl text-center text-red-600 text-sm font-medium"></p>
+        <p id="successMessage" class="hidden mt-4 p-3 bg-green-50 border border-green-100 rounded-xl text-center text-green-600 text-sm font-medium"></p>
+    </div>
+
+    <!-- ================= REGISTER SCRIPT (TIDAK DIUBAH) ================= -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const registerForm = document.getElementById('registerForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const API_BASE_URL = '';
+
+        function normalizePhoneNumber(phone) {
+            let clean = phone.replace(/\D/g, '');
+            if (clean.startsWith('0')) clean = '62' + clean.slice(1);
+            return clean;
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function showSuccess(msg) {
+            successMessage.textContent = msg;
+            successMessage.classList.remove('hidden');
+        }
+
+        function hideMessages() {
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+        }
+
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            hideMessages();
+
+            let phone = document.getElementById('phoneNumber').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showError('Password dan konfirmasi password tidak cocok.');
+                return;
+            }
+
+            phone = normalizePhoneNumber(phone);
+
+            if (!/^62\d{9,13}$/.test(phone)) {
+                showError('Nomor WhatsApp tidak valid.');
+                return;
+            }
+
+            if (!window.captchaToken) {
+                showError('Silakan selesaikan CAPTCHA terlebih dahulu.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/register-request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone_number: phone,
+                        password: password,
+                        captcha_token: window.captchaToken
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Registrasi gagal.');
+                }
+
+                showSuccess(
+                    'Permintaan pendaftaran berhasil dikirim. ' +
+                    'Menunggu persetujuan admin via WhatsApp.'
+                );
+
+                registerForm.reset();
+                window.captchaToken = null;
+
+            } catch (err) {
+                showError(err.message);
+            }
+        });
+    });
+    </script>
+
+</body>
+</html>

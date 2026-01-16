@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daftar Orderan – Service Dashboard</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#f9fafb;
+  --card:#ffffff;
+  --border:#e5e7eb;
+  --text:#111827;
+  --muted:#6b7280;
+  --accent:#2563eb;
+  --danger:#dc2626;
+  --shadow:0 8px 24px rgba(0,0,0,.06);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* Hamburger menu dan Overlay (tersembunyi di desktop) */
+.hamburger {
+  display: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .4);
+  z-index: 40;
+}
+/* [FIX] Menambahkan definisi class 'hidden' yang hilang */
+.hidden { display: none; }
+
+.app{display:flex;min-height:100vh}
+
+/* ===== MAIN ===== */
+.main{
+  margin-left:260px;
+  padding:24px 32px;
+  width:100%;
+}
+
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:24px;
+}
+
+.role{font-size:14px;color:var(--muted)}
+
+.card{
+  background:var(--card);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  padding:24px;
+  margin-bottom:24px;
+}
+
+/* ===== TABLE ===== */
+.table-wrap{overflow-x:auto}
+
+table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  font-size:14px;
+}
+
+thead th{
+  text-align:left;
+  padding:14px;
+  color:var(--muted);
+  font-weight:600;
+  border-bottom:1px solid var(--border);
+}
+
+tbody td{
+  padding:14px;
+  border-bottom:1px solid var(--border);
+  vertical-align:middle;
+}
+
+tbody tr:hover{
+  background:#f8fafc;
+}
+
+/* ===== QTY STEPPER ===== */
+.qty-wrapper{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  justify-content:center;
+}
+
+.qty-btn{
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:#fff;
+  cursor:pointer;
+  font-weight:700;
+  color:var(--accent);
+}
+
+.qty-btn:hover{background:#f1f5f9}
+
+.qty-input{
+  width:50px;
+  text-align:center;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:6px;
+  font-weight:600;
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state{
+  text-align:center;
+  padding:48px 16px;
+  color:var(--muted);
+}
+
+.empty-state i{
+  font-size:42px;
+  margin-bottom:12px;
+  color:#cbd5f5;
+}
+
+/* ===== GRAND TOTAL ===== */
+.total-box{
+  max-width:420px;
+  margin-left:auto;
+}
+
+.total-row{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+
+.total-final{
+  font-size:18px;
+  font-weight:700;
+  border-top:1px solid var(--border);
+  padding-top:12px;
+}
+
+/* ===== MODAL ===== */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.5);
+  backdrop-filter:blur(8px);
+  z-index:200;
+}
+
+.modal.show{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .main{margin-left:0;padding:16px}
+  .hamburger { display: block; }
+  .overlay.show { display: block; }
+}
+</style>
+</head>
+
+<body data-menu="order">
+<div class="app">
+
+  <!-- SIDEBAR TEMPLATE -->
+  <div id="sidebar-container"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <header class="header">
+      <div class="flex items-center gap-3">
+        <div class="hamburger" onclick="toggleSidebar()">
+          <i class="fa-solid fa-bars"></i>
+        </div>
+        <h2><i class="fa-solid fa-clipboard-list"></i> Daftar Orderan</h2>
+      </div>
+      <div class="role">Role: <b>Admin</b></div>
+    </header>
+
+    <!-- TABLE -->
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>No Sparepart</th>
+            <th>Nama Sparepart</th>
+            <th style="text-align:center">Qty</th>
+            <th style="text-align:right">Harga</th>
+            <th style="text-align:right">Total</th>
+          </tr>
+        </thead>
+        <tbody id="orderTableBody">
+          <tr id="loading-row">
+            <td colspan="6" style="text-align:center;padding:32px">
+              <i class="fa fa-spinner fa-spin"></i> Memuat daftar orderan...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- EMPTY -->
+      <div id="empty-state" class="empty-state hidden">
+        <i class="fa-solid fa-box-open"></i>
+        <p>Belum ada orderan yang masuk</p>
+      </div>
+    </div>
+
+    <!-- GRAND TOTAL -->
+    <div id="grand-total-section" class="card total-box hidden">
+      <div class="total-row">
+        <span>Subtotal</span>
+        <span id="grand-subtotal">Rp 0</span>
+      </div>
+      <div class="total-row">
+        <span>PPN 11%</span>
+        <span id="grand-ppn">Rp 0</span>
+      </div>
+      <div class="total-row total-final">
+        <span>TOTAL</span>
+        <span id="grand-total">Rp 0</span>
+      </div>
+
+      <!-- TOMBOL TETAP -->
+      <div style="text-align:right;margin-top:16px">
+        <button id="confirmPaymentBtn"
+          style="background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:10px;font-weight:600;cursor:pointer">
+          <i class="fa-solid fa-money-check"></i> Konfirmasi Pembayaran
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL (TIDAK DIUBAH) -->
+<div id="orderDetailModal" class="modal">
+  <div class="card" style="max-width:600px;width:90%">
+    <span class="close-button" style="float:right;cursor:pointer">&times;</span>
+    <h3>Detail Orderan</h3>
+    <p id="detailTimestamp"></p>
+    <p id="detailCustomerName"></p>
+    <p id="detailAddress"></p>
+    <pre id="detailItems"></pre>
+  </div>
+</div>
+
+<!-- SCRIPT -->
+<script src="orderan.js?v=2.1.1"></script>
+<script src="sidebar.js"></script>
+
+<script>
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('show');
+  document.getElementById('overlay').classList.toggle('show');
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembayaran - Endless Project</title>
+    
+    <!-- FONT & ICON -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- TAILWIND -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --bg: #f9fafb;
+            --card: #ffffff;
+            --border: #e5e7eb;
+            --text: #111827;
+            --muted: #6b7280;
+            --accent: #2563eb;
+            --danger: #dc2626;
+            --shadow: 0 8px 24px rgba(0, 0, 0, .06);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .app { display: flex; min-height: 100vh; }
+        .main { margin-left: 260px; padding: 24px 32px; width: 100%; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .hamburger { display: none; font-size: 22px; cursor: pointer; }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, .4); z-index: 40; }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        @media(max-width: 768px) {
+            .main { margin-left: 0; padding: 16px; }
+            .hamburger { display: block; }
+            .overlay.show { display: block; }
+        }
+    </style>
+</head>
+<body class="h-full" data-menu="payment">
+    
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="app">
+        <!-- SIDEBAR -->
+        <div id="sidebar-container"></div>
+
+        <main class="main">
+            <header class="header">
+                <div class="flex items-center gap-3">
+                    <div class="hamburger" onclick="toggleSidebar()">
+                        <i class="fa-solid fa-bars"></i>
+                    </div>
+                    <h2 class="text-xl font-semibold">Konfirmasi Pembayaran</h2>
+                </div>
+                <div class="text-sm text-gray-500">Role: <b>Admin</b></div>
+            </header>
+
+            <div class="max-w-2xl mx-auto">
+                <div class="card text-center">
+                    <div class="text-left mb-6">
+                        <a href="orderan.html" class="text-gray-500 hover:text-gray-800 font-medium transition-colors inline-flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i>Kembali
+                    </a>
+                    </div>
+
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                        <i class="fas fa-wallet mr-2 text-blue-600"></i> Pembayaran
+                    </h2>
+                    <p class="text-gray-500 mb-8">Selesaikan pembayaran untuk memproses pesanan.</p>
+
+                    <!-- Total Tagihan -->
+                    <div class="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-100">
+                        <p class="text-gray-600 text-sm font-medium">Total Tagihan</p>
+                        <p id="paymentTotal" class="text-3xl font-bold text-gray-900 font-mono my-2">Rp 0</p>
+                        <p class="text-xs text-gray-500">Termasuk PPN 11%</p>
+                    </div>
+
+                    <!-- Rincian Item Dropdown -->
+                    <div class="mb-8 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                        <button onclick="toggleItemDetails()" class="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors group">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-receipt text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+                                <span class="font-medium text-gray-700 text-sm">Rincian Item</span>
+                            </div>
+                            <i id="detail-icon" class="fas fa-chevron-down text-gray-400 transition-transform duration-200"></i>
+                        </button>
+                        <div id="item-details-content" class="hidden border-t border-gray-200 bg-white">
+                            <div class="p-4 space-y-3" id="items-list-container">
+                                <!-- Items will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detail Pembayaran QRIS -->
+                    <div id="qris-details" class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+                        <h4 class="font-bold mb-1 text-gray-800 text-lg">Scan QRIS</h4>
+                        <p class="text-xs text-gray-500 mb-6">Gunakan aplikasi e-wallet atau mobile banking</p>
+                        
+                        <div class="relative group mx-auto w-fit">
+                            <div id="qrcode-container" class="flex justify-center items-center w-64 h-64 bg-white border-2 border-dashed border-gray-300 rounded-2xl p-2 mb-4 transition-all hover:border-blue-400">
+                                <i class="fas fa-spinner fa-spin text-3xl text-gray-300"></i>
+                            </div>
+                            <!-- Expired Overlay -->
+                            <div id="expired-overlay" class="hidden absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col justify-center items-center rounded-2xl z-10 transition-opacity">
+                                <div class="bg-red-100 p-3 rounded-full mb-3"><i class="fas fa-history text-2xl text-red-500"></i></div>
+                                <p class="font-semibold text-gray-800 mb-1">QR Kedaluwarsa</p>
+                                <p class="text-xs text-gray-500 mb-4 text-center px-4">Kode QR telah berakhir. Silakan buat baru.</p>
+                                <button onclick="refreshPayment()" class="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 flex items-center gap-2">
+                                    <i class="fas fa-sync-alt"></i> Buat QR Baru
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-2">
+                            <p id="payment-status-text" class="font-semibold text-blue-600 animate-pulse">Memuat...</p>
+                            <p id="expiry-timer" class="text-xs text-gray-400 mt-1 font-mono h-4"></p>
+                        </div>
+                    </div>
+
+                    <p id="paymentError" class="text-center text-red-600 text-sm mt-4 hidden bg-red-50 p-3 rounded-lg"></p>
+                </div>
+            </div>
+        </div>
+    </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Ambil elemen
+            const paymentTotalEl = document.getElementById('paymentTotal');
+            const qrcodeContainer = document.getElementById('qrcode-container');
+            const paymentStatusText = document.getElementById('payment-status-text');
+            const paymentErrorEl = document.getElementById('paymentError');
+            const expiredOverlay = document.getElementById('expired-overlay');
+            const expiryTimerEl = document.getElementById('expiry-timer');
+            // const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+            const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}`;
+            let pollingInterval; // Variabel untuk menyimpan interval polling status
+            let qrRefreshInterval; // Variabel untuk menyimpan interval refresh QR
+            let countdownInterval; // Interval untuk timer visual
+
+            // 1. Ambil data dari localStorage dan tampilkan total
+            const paymentData = JSON.parse(localStorage.getItem('paymentDetails'));
+            if (paymentData && paymentData.total) {
+                paymentTotalEl.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(paymentData.total);
+                
+                // Render Item Details
+                renderItemDetails(paymentData.items);
+
+                // [FIX] Cek apakah ada transaksi aktif yang belum expired (5 menit)
+                const activeTx = JSON.parse(localStorage.getItem('activeTransaction'));
+                let useExisting = false;
+
+                if (activeTx && activeTx.total === paymentData.total) {
+                    const now = new Date().getTime();
+                    if (now < activeTx.expiresAt) {
+                        useExisting = true;
+                    }
+                }
+
+                if (useExisting) {
+                    // Coba gunakan transaksi yang ada
+                    try {
+                        renderQR(activeTx.transactionId);
+                        startPolling(activeTx.transactionId);
+                        console.log("Menggunakan transaksi aktif:", activeTx.transactionId);
+                    } catch (e) {
+                        console.log("Gagal resume, buat baru.");
+                        await initiateQrisPayment();
+                    }
+                } else {
+                    // Buat baru jika tidak ada atau expired
+                    await initiateQrisPayment();
+                }
+
+            } else {
+                paymentTotalEl.textContent = 'Error';
+                paymentErrorEl.textContent = 'Data total pembayaran tidak ditemukan. Silakan kembali ke halaman orderan.';
+                paymentErrorEl.classList.remove('hidden');
+                qrcodeContainer.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-2"></i><span class="text-red-500">Data pembayaran tidak ditemukan.</span>`;
+                paymentStatusText.textContent = 'Gagal memuat pembayaran.';
+                return; // Hentikan eksekusi
+            }
+
+            // Fungsi Render Item Details
+            function renderItemDetails(items) {
+                const container = document.getElementById('items-list-container');
+                container.innerHTML = '';
+                if (!items) return;
+
+                Object.values(items).forEach(item => {
+                    const name = item.name || item.product_name || 'Item';
+                    const price = item.price || item.total || 0;
+                    const qty = item.quantity || item.qty || 1;
+                    
+                    const row = document.createElement('div');
+                    row.className = 'flex justify-between items-start text-sm border-b border-gray-50 last:border-0 pb-2 last:pb-0';
+                    row.innerHTML = `
+                        <div class="text-left">
+                            <p class="font-medium text-gray-800">${name}</p>
+                            <p class="text-xs text-gray-500">Qty: ${qty}</p>
+                        </div>
+                        <p class="font-medium text-gray-700">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price)}</p>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+
+            // Fungsi Helper Render QR
+            function renderQR(transactionId) {
+                const confirmationUrl = `${window.location.protocol}//${window.location.host}/mobile-confirm.html?tx_id=${transactionId}`;
+                qrcodeContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(confirmationUrl)}" alt="QRIS Code" class="mx-auto rounded-lg">`;
+                paymentStatusText.innerHTML = `<i class="fas fa-hourglass-half mr-2"></i>Menunggu Pembayaran...`;
+                paymentStatusText.classList.remove('text-red-600', 'text-green-600');
+                paymentStatusText.classList.add('text-blue-600');
+                expiredOverlay.classList.add('hidden'); // Hide overlay
+
+                // Start Countdown Timer
+                const activeTx = JSON.parse(localStorage.getItem('activeTransaction'));
+                if (activeTx && activeTx.expiresAt) {
+                    startCountdown(activeTx.expiresAt);
+                }
+            }
+            
+            // Fungsi untuk memulai timer hitung mundur
+            function startCountdown(expiresAt) {
+                if (countdownInterval) clearInterval(countdownInterval); // Clear previous interval
+
+                const expiryDate = new Date(expiresAt);
+
+                countdownInterval = setInterval(() => {
+                    const now = new Date().getTime();
+                    const distance = expiryDate - now;
+
+                    if (distance < 0) {
+                        clearInterval(countdownInterval);
+                        expiryTimerEl.textContent = '00:00';
+                        handleExpiredSession(); // Panggil fungsi expired
+                        return;
+                    }
+
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    expiryTimerEl.textContent = `Sisa waktu: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+
+            // Fungsi untuk refresh pembayaran (dipanggil dari tombol "Buat QR Baru")
+            window.refreshPayment = async function() {
+                expiredOverlay.classList.add('hidden');
+                await initiateQrisPayment();
+            };
+
+            // Fungsi untuk memeriksa dan me-refresh QR secara otomatis (jika diinginkan)
+            // Saat ini dinonaktifkan karena user memilih manual refresh setelah expired
+            /*
+            async function checkAndRefreshQR() {
+                const activeTx = JSON.parse(localStorage.getItem('activeTransaction'));
+                // Jika tidak ada transaksi aktif atau sudah expired, buat yang baru
+                if (!activeTx || new Date().getTime() > activeTx.expiresAt) {
+                    console.log("Transaksi expired atau tidak ada, membuat QR baru otomatis.");
+                    await initiateQrisPayment();
+                }
+            } */
+
+            // 2. Fungsi untuk memulai sesi pembayaran QRIS
+            async function initiateQrisPayment() {
+                if (!paymentData) return;
+
+                // Tampilkan spinner setiap kali QR code akan di-generate ulang
+                qrcodeContainer.innerHTML = `<i class="fas fa-spinner fa-spin text-2xl text-gray-700"></i>`;
+                paymentStatusText.innerHTML = `<i class="fas fa-hourglass-half mr-2"></i>Membuat sesi pembayaran...`;
+                expiredOverlay.classList.add('hidden');
+
+                // Hentikan polling sebelumnya jika ada, karena kita akan memulai yang baru
+                if (pollingInterval) clearInterval(pollingInterval);
+                if (countdownInterval) clearInterval(countdownInterval);
+
+                const orderIds = new Set();
+                Object.values(paymentData.items || {}).forEach(item => {
+                    if (item.orderIds && typeof item.orderIds.forEach === 'function') {
+                        item.orderIds.forEach(id => orderIds.add(id));
+                    } else if (Array.isArray(item.orderIds)) {
+                         item.orderIds.forEach(id => orderIds.add(id));
+                    }
+                });
+
+                const formData = new FormData();
+                formData.append('order_ids', Array.from(orderIds).join(','));
+                formData.append('total_amount', paymentData.total);
+                formData.append('item_details', JSON.stringify(paymentData.items));
+
+                try {
+                    const token = localStorage.getItem('authToken');
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/payments/initiate`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Gagal membuat sesi pembayaran.');
+                    }
+
+                    const data = await response.json();
+                    const transactionId = data.transaction_id;
+
+                    // [FIX] Simpan transaksi aktif ke localStorage dengan expiry 5 menit
+                    const expiresAt = new Date().getTime() + (5 * 60 * 1000); 
+                    localStorage.setItem('activeTransaction', JSON.stringify({
+                        transactionId: transactionId,
+                        expiresAt: expiresAt,
+                        total: paymentData.total
+                    }));
+
+                    renderQR(transactionId);
+                    
+                    // Mulai polling status untuk transaksi baru
+                    startPolling(transactionId);
+
+                } catch (error) {
+                    paymentErrorEl.textContent = `Error: ${error.message}. Coba muat ulang halaman.`;
+                    paymentErrorEl.classList.remove('hidden');
+                    qrcodeContainer.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>`;
+                    // Hentikan semua interval jika terjadi error fatal
+                    if (pollingInterval) clearInterval(pollingInterval);
+                    if (qrRefreshInterval) clearInterval(qrRefreshInterval);
+                }
+            }
+
+            // 3. Fungsi untuk polling status
+            function startPolling(transactionId) {
+                pollingInterval = setInterval(async () => {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/payments/status/${transactionId}`);
+                        if (!response.ok) {
+                            if (response.status === 404) handleExpiredSession();
+                            return;
+                        }
+
+                        const data = await response.json();
+                        if (data.status === 'LUNAS') {
+                            handleSuccessfulPayment();
+                        } else if (data.status === 'EXPIRED') {
+                            handleExpiredSession();
+                        }
+                    } catch (error) {
+                        console.error("Polling error:", error);
+                    }
+                }, 2000); // Cek setiap 2 detik
+            }
+
+            function handleSuccessfulPayment() {
+                clearInterval(pollingInterval);
+                clearInterval(qrRefreshInterval);
+                clearInterval(countdownInterval);
+                paymentStatusText.innerHTML = `<i class="fas fa-check-circle text-green-500 mr-2"></i>Pembayaran Berhasil!`;
+                paymentStatusText.classList.add('text-green-600');
+                
+                localStorage.removeItem('activeTransaction'); // Hapus sesi aktif
+                localStorage.removeItem('paymentDetails');
+                setTimeout(() => {
+                    alert('Pembayaran berhasil! Anda akan diarahkan ke riwayat pembayaran.');
+                    window.location.href = 'payment-history.html';
+                }, 1500);
+            }
+
+            function handleExpiredSession() {
+                clearInterval(pollingInterval);
+                if (countdownInterval) clearInterval(countdownInterval);
+                paymentStatusText.innerHTML = `<i class="fas fa-clock text-red-500 mr-2"></i>Waktu Pembayaran Habis`;
+                paymentStatusText.classList.add('text-red-600');
+                expiredOverlay.classList.remove('hidden'); // Tampilkan overlay expired
+                // Hapus activeTransaction agar saat refreshPayment() dipanggil, QR baru dibuat
+                localStorage.removeItem('activeTransaction');
+            }
+        });
+
+        function toggleSidebar(){
+            document.getElementById('sidebar').classList.toggle('show');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>

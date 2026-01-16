@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riwayat Pembayaran - Endless Project</title>
+
+<!-- FONT & ICON -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<!-- TAILWIND (CONTENT ONLY) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+:root{
+  --bg:#f9fafb;
+  --card:#ffffff;
+  --border:#e5e7eb;
+  --text:#111827;
+  --muted:#6b7280;
+  --accent:#2563eb;
+  --danger:#dc2626;
+  --success:#10b981;
+  --warning:#f59e0b;
+  --shadow:0 8px 24px rgba(0,0,0,.06);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.app{display:flex;min-height:100vh}
+
+/* ===== MAIN ===== */
+.main{
+  margin-left:260px;
+  padding:24px 32px;
+  width:100%;
+}
+
+/* ===== HEADER ===== */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:32px;
+}
+
+/* ===== HAMBURGER ===== */
+.hamburger{
+  display:none;
+  font-size:22px;
+  cursor:pointer;
+}
+
+/* ===== OVERLAY ===== */
+.overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+  z-index:40;
+}
+
+/* ===== CARD ===== */
+.card{
+  background:var(--card);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+  padding:24px;
+  margin-bottom:24px;
+}
+
+/* ===== FILTER ===== */
+.filter-btn{
+  background:#f3f4f6;
+  color:var(--muted);
+  padding:8px 16px;
+  border-radius:9999px;
+  font-weight:500;
+  border:none;
+  cursor:pointer;
+  transition:.2s;
+}
+.filter-btn:hover{background:#e5e7eb}
+.filter-btn.selected{
+  background:var(--accent);
+  color:white;
+  font-weight:600;
+}
+
+/* ===== STATUS BADGE ===== */
+.status-badge{
+  padding:4px 12px;
+  border-radius:9999px;
+  font-size:12px;
+  font-weight:600;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.status-lunas{background:rgba(16,185,129,.1);color:var(--success)}
+.status-proses{background:rgba(245,158,11,.1);color:var(--warning)}
+.status-gagal{background:rgba(220,38,38,.1);color:var(--danger)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  .main{margin-left:0;padding:16px}
+  .hamburger{display:block}
+  .overlay.show{display:block}
+}
+</style>
+</head>
+
+<body data-menu="payment-history">
+
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="app">
+
+  <!-- SIDEBAR TEMPLATE -->
+  <div id="sidebar-container"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="flex items-center gap-3">
+        <div class="hamburger" onclick="toggleSidebar()">
+          <i class="fa-solid fa-bars"></i>
+        </div>
+        <h2 class="text-xl font-semibold">
+          <i class="fas fa-history mr-2 text-purple-600"></i>
+          Riwayat Pembayaran
+        </h2>
+      </div>
+
+      <div class="text-sm text-gray-500">
+        Role: <b id="user-role-display">Admin</b>
+      </div>
+    </header>
+
+    <!-- FILTER -->
+    <div class="card text-center">
+      <p class="text-gray-500 mb-4">Lihat semua transaksi pembayaran Anda</p>
+      <div class="flex flex-wrap justify-center gap-2">
+        <button id="filter-all" class="filter-btn selected">Semua</button>
+        <button id="filter-lunas" class="filter-btn">Berhasil</button>
+        <button id="filter-pending" class="filter-btn">Proses</button>
+        <button id="filter-gagal" class="filter-btn">Gagal</button>
+      </div>
+    </div>
+
+    <!-- HISTORY LIST -->
+    <div id="historyList" class="space-y-4">
+
+      <!-- LOADING -->
+      <div id="loading-state" class="card text-center text-gray-600">
+        <i class="fas fa-spinner fa-spin mr-2"></i>
+        Memuat riwayat pembayaran...
+      </div>
+
+      <!-- EMPTY -->
+      <div id="empty-state" class="hidden card text-center text-gray-600">
+        <i class="fas fa-file-invoice-dollar text-3xl mb-3"></i>
+        <p>Tidak ada riwayat pembayaran.</p>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- SCRIPT -->
+<script src="payment-history.js"></script>
+<script src="sidebar.js"></script>
+
+</body>
+</html>

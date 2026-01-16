@@ -1,0 +1,59 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+
+    steps:
+    # -----------------------------
+    # 1️⃣ Checkout kode repository
+    # -----------------------------
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # -----------------------------
+    # 2️⃣ Validasi Docker Compose
+    # -----------------------------
+    - name: Validate Docker Compose
+      run: docker compose -f docker-compose.yml config
+
+    # -----------------------------
+    # 3️⃣ Setup Python untuk linting
+    # -----------------------------
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+
+    # -----------------------------
+    # 4️⃣ Jalankan lint check (opsional)
+    # -----------------------------
+    - name: Lint with Flake8
+      run: |
+        pip install flake8
+        flake8 backend/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    # -----------------------------
+    # 5️⃣ Deploy ke VPS via SSH
+    # -----------------------------
+    - name: Deploy to VPS via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          echo "🚀 Starting deployment to VPS..."
+          cd ~/Whatsapp_Bot
+          echo "📦 Pulling latest code..."
+          git pull origin master
+          echo "⚙️ Rebuilding Docker containers..."
+          docker-compose build backend
+          echo "🧱 Restarting Docker services..."
+          docker-compose up -d --remove-orphans
+          echo "✅ Deployment finished successfully!"

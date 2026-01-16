@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - Endless Project</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #4f46e5; 
+            --bg-body: #f3f4f6;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-body);
+            margin: 0;
+        }
+
+        /* Container Utama Sesuai Standar Sidebar Anda */
+        .app { display: flex; min-height: 100vh; }
+        
+        .main {
+            flex: 1;
+            /* Memberi ruang untuk sidebar di desktop, 
+               pastikan lebar sesuai dengan lebar sidebar.js Anda */
+            margin-left: 260px; 
+            transition: all 0.3s ease;
+        }
+
+        /* Overlay untuk Mobile Sidebar */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.4);
+            z-index: 40;
+        }
+
+        /* Styling Khusus Invoice */
+        .invoice-box {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ============================
+           PRINT STYLES
+           ============================ */
+        @media print {
+            @page { margin: 0; size: auto; }
+            body { background-color: white !important; }
+            .app { display: block !important; }
+            .main { margin-left: 0 !important; padding: 0 !important; }
+            #sidebar-container, .no-print, .overlay { display: none !important; }
+            .invoice-box { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; }
+            .print-bg-primary { background-color: var(--primary) !important; -webkit-print-color-adjust: exact; }
+            .print-text-white { color: white !important; }
+        }
+
+        /* Mobile Viewport */
+        @media (max-width: 768px) {
+            .main { margin-left: 0 !important; }
+            .overlay.show { display: block; }
+        }
+    </style>
+</head>
+<body data-menu="estimasi_jasa">
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="app">
+        <div id="sidebar-container"></div>
+
+        <main class="main">
+            
+            <div class="no-print bg-slate-800 text-white p-3 flex justify-between items-center sticky top-0 z-30 shadow-md">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar()" class="md:hidden text-white p-2">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h2 class="text-sm font-bold tracking-tight">INVOICE PREVIEW</h2>
+                </div>
+
+                <div class="flex gap-2">
+                    <button id="whatsappBtn" class="bg-green-600 hover:bg-green-700 px-4 py-1.5 rounded text-[11px] font-bold flex items-center gap-2 transition-all"> 
+                        <i class="fab fa-whatsapp"></i> KIRIM WA
+                    </button>
+                    <button id="printBtn" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-1.5 rounded text-[11px] font-bold flex items-center gap-2 transition-all"> 
+                        <i class="fas fa-print"></i> CETAK
+                    </button>
+                </div>
+            </div>
+
+            <div id="invoicePage" class="p-4 md:p-10 flex justify-center">
+                
+                <div class="invoice-box w-full max-w-[210mm] bg-white overflow-hidden border border-gray-100">
+
+                    <div class="flex flex-col md:flex-row border-b border-gray-100">
+                        <div class="w-full md:w-2/3 p-8 bg-white">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-xl shadow-lg">
+                                    <i class="fas fa-layer-group"></i>
+                                </div>
+                                <div>
+                                    <h1 class="text-2xl font-black text-slate-900 leading-none">ENDLESS PROJECT</h1>
+                                    <p class="text-[11px] text-indigo-600 font-bold uppercase tracking-[0.2em] mt-1">Automotive Solutions</p>
+                                </div>
+                            </div>
+                            
+                            <div class="text-xs text-slate-500 space-y-1">
+                                <p class="font-bold text-slate-800">Kantor Pusat & Workshop Medan:</p>
+                                <p>Jl. Otomotif Raya No. 88, Kawasan Industri, Medan 20111</p>
+                                <p><i class="fas fa-envelope mr-1 text-indigo-500"></i> support@endlessproject.com</p>
+                                <p><i class="fas fa-phone mr-1 text-indigo-500"></i> +62 812-3456-7890</p>
+                            </div>
+                        </div>
+
+                        <div class="w-full md:w-1/3 bg-indigo-600 p-8 text-white flex flex-col justify-center print-bg-primary">
+                            <h2 class="text-3xl font-light mb-4 tracking-widest uppercase">Invoice</h2>
+                            <div class="space-y-3">
+                                <div>
+                                    <p class="text-[10px] uppercase opacity-70 font-bold">No. Referensi</p>
+                                    <p id="invoiceNumber" class="text-lg font-bold font-mono">#INV-LOAD...</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] uppercase opacity-70 font-bold">Tanggal</p>
+                                    <p id="invoiceDate" class="font-medium text-sm">-- -- 2024</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50/50 border-b border-gray-100">
+                        <div>
+                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Customer Info</h3>
+                            <div class="pl-4 border-l-4 border-indigo-600">
+                                <p id="customerNameInv" class="text-base font-bold text-slate-900">-</p>
+                                <p id="customerPhoneInv" class="text-sm text-slate-600 mt-1">-</p>
+                                <p class="text-[10px] text-slate-400 font-medium">REG: EP-CUST-2024</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Vehicle Detail</h3>
+                            <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                                <div class="bg-slate-100 px-3 py-2 rounded-lg text-center min-w-[100px]">
+                                    <p class="text-[9px] font-bold text-slate-500 uppercase">Plat Nomor</p>
+                                    <p id="customerPlateInv" class="text-sm font-black text-slate-900 font-mono">-</p>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-[9px] font-bold text-slate-500 uppercase">Catatan</p>
+                                    <p id="customerNoteInv" class="text-xs text-slate-600 italic line-clamp-2">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-8">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="border-b-2 border-slate-900">
+                                    <th class="py-3 text-[11px] font-black text-slate-900 uppercase text-left w-1/2">Deskripsi Layanan</th>
+                                    <th class="py-3 text-[11px] font-black text-slate-900 uppercase text-center">Tipe</th>
+                                    <th class="py-3 text-[11px] font-black text-slate-900 uppercase text-right">Harga</th>
+                                    <th class="py-3 text-[11px] font-black text-slate-900 uppercase text-center">Qty</th>
+                                    <th class="py-3 text-[11px] font-black text-slate-900 uppercase text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoiceItems" class="text-xs">
+                                </tbody>
+                        </table>
+                    </div>
+
+                    <div class="p-8 bg-slate-50 border-t border-gray-100">
+                        <div class="flex flex-col md:flex-row gap-10">
+                            <div class="flex-1">
+                                <div class="bg-white p-4 rounded-xl border border-gray-200 mb-6">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Pembayaran via Transfer:</p>
+                                    <div class="flex items-center gap-4">
+                                        <div class="bg-blue-600 text-white px-3 py-1 rounded font-bold text-xs">BCA</div>
+                                        <div>
+                                            <p class="text-sm font-black text-slate-800">8820-1234-5678</p>
+                                            <p class="text-[10px] text-slate-500">Endless Project Official</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-[9px] text-slate-400 leading-relaxed">
+                                    <p class="font-bold mb-1 text-slate-500 uppercase">Syarat & Ketentuan:</p>
+                                    <ul class="list-disc pl-4 space-y-0.5">
+                                        <li>Estimasi berlaku 7 hari sejak diterbitkan.</li>
+                                        <li>Harga sparepart mengikuti fluktuasi pasar.</li>
+                                        <li>Garansi servis 7 hari (S&K Berlaku).</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="w-full md:w-1/3">
+                                <div class="space-y-2 mb-6">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-slate-500">Subtotal</span>
+                                        <span id="invoiceSubtotal" class="font-bold">Rp 0</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-red-500">
+                                        <span>Diskon</span>
+                                        <span id="invoiceDiscount">- Rp 0</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-slate-500">PPN (11%)</span>
+                                        <span id="invoicePPN" class="font-bold">Rp 0</span>
+                                    </div>
+                                    <div class="border-t border-slate-200 pt-2 flex justify-between">
+                                        <span class="text-sm font-black uppercase">Grand Total</span>
+                                        <span id="invoiceTotal" class="text-xl font-black text-indigo-600">Rp 0</span>
+                                    </div>
+                                </div>
+                                <div class="text-center pt-6 border-t border-slate-200">
+                                    <p class="text-[10px] text-slate-400 mb-8 uppercase font-bold">Hormat Kami,</p>
+                                    <p class="text-xs font-black text-slate-900">ENDLESS PROJECT</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 text-white py-3 text-center text-[9px] tracking-widest font-bold uppercase print-text-white">
+                        Official Automotive Partner • endlessproject.my.id
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="service.js"></script>
+    <script src="sidebar.js"></script>
+
+    <script>
+        // Mempercantik baris tabel secara dinamis
+        const targetNode = document.getElementById('invoiceItems');
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length) {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.tagName === 'TR') {
+                            node.classList.add('border-b', 'border-slate-50', 'hover:bg-slate-50/50');
+                            Array.from(node.children).forEach((td, index) => {
+                                td.classList.add('py-3', 'px-1');
+                                if(index === 0) td.classList.add('font-bold', 'text-slate-800');
+                                if(index === 2 || index === 4) td.classList.add('text-right', 'font-mono');
+                                if(index === 3 || index === 1) td.classList.add('text-center');
+                            });
+                        }
+                    });
+                }
+            });
+        });
+        if(targetNode) observer.observe(targetNode, { childList: true });
+
+        // Fungsi Cetak
+        document.getElementById('printBtn').addEventListener('click', () => { window.print(); });
+    </script>
+</body>
+</html>

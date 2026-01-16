@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/_sdk/data_sdk.js"></script>
+    <script src="/_sdk/element_sdk.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preload" as="image" href="background/est.jpg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        if (localStorage.getItem('authToken')) {
+            localStorage.setItem('token', localStorage.getItem('authToken'));
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        @view-transition { navigation: auto; }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent: #f59e0b;
+            --sidebar-width: 260px; /* Tambahan untuk layout */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            margin: 0;
+            display: flex; /* Tambahan agar sidebar dan konten bersebelahan */
+        }
+
+        /* Penyesuaian Layout untuk Sidebar */
+        #sidebar-container {
+            width: var(--sidebar-width);
+            flex-shrink: 0;
+            z-index: 60;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar-container { width: 0; }
+            .main-content { width: 100%; }
+        }
+
+        /* Modern Card Styling */
+        .liquid-glass {
+            background: var(--card-bg);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s ease;
+        }
+
+        /* Input Styling */
+        .glass-input {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .glass-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        /* Floating Action Button */
+        #confirmBtn {
+            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4);
+            transform: translateY(0);
+        }
+
+        #confirmBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(245, 158, 11, 0.5);
+        }
+
+        /* Section Icons */
+        .section-header i {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+
+<body data-menu="estimasi_jasa"> <div id="sidebar-container"></div>
+
+<div class="main-content">
+    <div id="detailPage" class="w-full min-h-screen py-8 px-4 md:px-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <button id="backBtn" class="w-fit flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+                    <i class="fas fa-arrow-left text-sm"></i> Kembali
+                </button>
+                <h2 id="detailTitle" class="text-3xl font-extrabold tracking-tight text-slate-800"></h2>
+            </div>
+
+            <div class="liquid-glass p-8 mb-8">
+                <div class="flex items-center gap-3 mb-6 section-header">
+                    <i class="fas fa-user-circle text-2xl"></i>
+                    <h3 class="text-xl font-bold text-slate-800">Informasi Pelanggan</h3>
+                </div>
+                <form id="customerForm" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-slate-600 ml-1">Nama Lengkap</label>
+                        <div class="relative">
+                            <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="customerName" placeholder="Nama pelanggan" class="w-full pl-10 glass-input">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-slate-600 ml-1">Plat Kendaraan</label>
+                        <div class="relative">
+                            <i class="fas fa-id-card absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="customerPlate" placeholder="BK 1234 ABC" class="w-full pl-10 glass-input">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-slate-600 ml-1">Nomor HP</label>
+                        <div class="relative">
+                            <i class="fas fa-phone absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="tel" id="customerPhone" placeholder="08..." class="w-full pl-10 glass-input">
+                        </div>
+                    </div>
+                    <div class="md:col-span-3 space-y-2">
+                        <label class="text-sm font-semibold text-slate-600 ml-1">Catatan Tambahan</label>
+                        <textarea id="customerNote" rows="2" placeholder="Detail keluhan atau instruksi khusus..." class="w-full glass-input"></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="liquid-glass p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3 section-header">
+                            <i class="fas fa-cog text-2xl"></i>
+                            <h3 class="text-xl font-bold text-slate-800">Sparepart</h3>
+                        </div>
+                        <span class="bg-blue-50 text-blue-600 text-xs font-bold px-3 py-1 rounded-full border border-blue-100 uppercase tracking-wider">Inventori</span>
+                    </div>
+
+                    <div class="relative mb-6">
+                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="sparepartSearch" placeholder="Cari nama atau kode sparepart..." class="w-full pl-11 glass-input">
+                        <div id="sparepartDropdown" class="hidden absolute z-50 w-full bg-white border border-slate-200 rounded-xl mt-2 max-h-60 overflow-y-auto shadow-2xl"></div>
+                    </div>
+
+                    <div id="selectedSpareparts" class="space-y-3 min-h-[100px]">
+                        <div class="text-center py-8 text-slate-400 italic">
+                            <i class="fas fa-box-open block text-3xl mb-2 opacity-20"></i>
+                            Belum ada sparepart dipilih
+                        </div>
+                    </div>
+                </div>
+
+                <div class="liquid-glass p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3 section-header">
+                            <i class="fas fa-tools text-2xl"></i>
+                            <h3 class="text-xl font-bold text-slate-800">Layanan Jasa</h3>
+                        </div>
+                        <span class="bg-amber-50 text-amber-600 text-xs font-bold px-3 py-1 rounded-full border border-amber-100 uppercase tracking-wider">Servis</span>
+                    </div>
+
+                    <div class="relative mb-6">
+                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="jasaSearch" placeholder="Cari layanan jasa..." class="w-full pl-11 glass-input">
+                        <div id="jasaDropdown" class="hidden absolute z-50 w-full bg-white border border-slate-200 rounded-xl mt-2 max-h-60 overflow-y-auto shadow-2xl"></div>
+                    </div>
+
+                    <div id="selectedJasa" class="space-y-3 min-h-[100px]">
+                        <div class="text-center py-8 text-slate-400 italic">
+                            <i class="fas fa-wrench block text-3xl mb-2 opacity-20"></i>
+                            Belum ada jasa dipilih
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="confirmBtn" 
+    class="hidden fixed bottom-8 right-8 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:-translate-y-1 transition-all duration-300 z-40 flex items-center gap-3" 
+    style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)">
+    <i class="fas fa-file-invoice"></i>
+    <span>Buat Invoice</span>
+</button>
+
+<div id="addJasaModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[70] p-4">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl transform transition-all">
+        <div class="mb-6">
+            <h4 class="text-2xl font-bold text-slate-800">Tambah Jasa Kustom</h4>
+            <p class="text-slate-500 text-sm">Masukkan detail layanan yang tidak ada di daftar.</p>
+        </div>
+
+        <form id="addJasaForm" class="space-y-5">
+            <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <label class="flex items-center space-x-3 text-sm font-semibold text-indigo-700 cursor-pointer">
+                    <input type="checkbox" id="calculateRateSwitch" checked class="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>Gunakan Perhitungan Rate Otomatis</span>
+                </label>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-sm font-bold text-slate-700">Nama Layanan</label> 
+                <input type="text" id="newJasaName" required placeholder="Contoh: Perbaikan Sasis" class="w-full glass-input">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-slate-700">Durasi (Menit)</label> 
+                    <input type="number" id="newJasaDuration" required min="1" value="100" class="w-full glass-input">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-slate-700">Total Biaya (Rp)</label> 
+                    <input type="number" id="newJasaLaborCharge" required min="0" placeholder="0" class="w-full glass-input">
+                </div>
+            </div>
+            
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-slate-500 font-medium uppercase">Estimasi Base Rate</span>
+                    <p id="calculatedRateDisplay" class="font-bold text-indigo-600">Rp 0</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeJasaModal()" class="flex-1 px-4 py-3 rounded-xl text-slate-600 font-semibold hover:bg-slate-100 transition">Batal</button> 
+                <button type="submit" class="flex-1 bg-indigo-600 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">Simpan Jasa</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="sidebar.js"></script> <script src="service.js"></script>
+</body>
+</html>

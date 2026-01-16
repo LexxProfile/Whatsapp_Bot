@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Endless Project - Dashboard</title>
+
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#ffffff;
+  --border:#e5e7eb;
+  --text:#111827;
+  --muted:#6b7280;
+  --accent:#2563eb;
+  --danger:#dc2626;
+  --shadow:0 8px 24px rgba(0,0,0,.06);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter',sans-serif;
+  background:#f9fafb;
+  color:var(--text);
+}
+
+.app{display:flex;min-height:100vh}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:260px;
+  background:#fff;
+  border-right:1px solid var(--border);
+  position:fixed;
+  inset:0 auto 0 0;
+  padding:24px 16px;
+  display:flex;
+  flex-direction:column;
+  z-index:100;
+}
+
+.brand{
+  font-size:20px;
+  font-weight:700;
+  margin-bottom:24px;
+}
+
+.menu{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.menu a{
+  text-decoration:none;
+  color:var(--muted);
+  padding:12px 14px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.menu a:hover{background:#f1f5f9;color:#111}
+.menu a.active{background:rgba(37,99,235,.1);color:var(--accent)}
+
+/* ===== PROFILE ===== */
+.profile{
+  border-top:1px solid var(--border);
+  padding-top:16px;
+}
+
+.profile-name{font-weight:600;font-size:14px}
+
+.profile-status{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  margin-bottom:12px;
+}
+
+.status-dot{
+  width:8px;
+  height:8px;
+  background:#22c55e;
+  border-radius:50%;
+}
+
+.logout{
+  width:100%;
+  border:none;
+  background:rgba(220,38,38,.1);
+  color:var(--danger);
+  padding:10px;
+  border-radius:10px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+/* ===== MAIN ===== */
+.main{
+  margin-left:260px;
+  padding:24px 32px;
+  flex: 1;
+  min-width: 0;
+}
+
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:32px;
+}
+
+.role{
+  font-size:14px;
+  color:var(--muted);
+  font-weight:500;
+}
+
+.card{
+  background:#fff;
+  border-radius:16px;
+  box-shadow:var(--shadow);
+  padding:32px;
+}
+
+.home{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+}
+
+.clock{
+  font-size:64px;
+  font-weight:700;
+  color:var(--accent);
+  text-shadow:0 0 16px rgba(37,99,235,.35);
+}
+
+/* ===== HAMBURGER ===== */
+.hamburger{
+  display:none;
+  font-size:22px;
+  cursor:pointer;
+}
+
+/* ===== OVERLAY ===== */
+.overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+  z-index:50;
+}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  .sidebar{
+    transform:translateX(-100%);
+    transition:.3s;
+  }
+  .sidebar.show{transform:translateX(0)}
+  .main{margin-left:0}
+  .hamburger{display:block}
+  .overlay.show{display:block}
+}
+</style>
+</head>
+
+<body data-menu="dashboard">
+
+<div id="bg-slideshow"></div>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="app">
+<!-- SIDEBAR -->
+ <div id="sidebar-container"></div> 
+
+<!-- MAIN -->
+<main class="main">
+  <header class="header">
+    <div class="hamburger" onclick="toggleSidebar()">
+      <i class="fa-solid fa-bars"></i>
+    </div>
+    <div class="role">Role: <b>Admin</b></div>
+  </header>
+
+  <!-- Dynamic content will be loaded here -->
+  <div id="app-main-content"></div>
+</main>
+
+</div>
+
+<!-- ===== SCRIPT BARU UNTUK MEMUAT KONTEN DINAMIS DAN LOGIKA DASHBOARD ===== -->
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+  // Fungsi untuk memuat konten HTML secara dinamis
+  async function loadHtmlIntoElement(url, elementId) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to load ${url}: ${response.statusText}`);
+      }
+      const html = await response.text();
+      document.getElementById(elementId).innerHTML = html;
+
+      // Sinkronisasi menu aktif setelah sidebar dimuat
+      if (elementId === 'sidebar-container') {
+        const activePage = document.body.getAttribute('data-menu');
+        const activeLink = document.querySelector(`.menu a[data-page="${activePage}"]`);
+        if (activeLink) {
+          activeLink.classList.add('active');
+        }
+      }
+    } catch (error) {
+      console.error(`Error loading ${url}:`, error);
+      // Tampilkan pesan error di elemen jika gagal memuat
+      document.getElementById(elementId).innerHTML = `<p style="color: red;">Error: Gagal memuat ${url}.</p>`;
+    }
+  }
+
+  // Muat Sidebar dan Home Content secara paralel
+  await loadHtmlIntoElement('home.html', 'app-main-content');
+
+  // Setelah konten dinamis dimuat, jalankan skrip yang bergantung padanya
+  const logoutBtn = document.getElementById('logoutBtn');
+  const homeUserName = document.getElementById('homeUserName');
+
+  function parseJwt(token) {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error("Error parsing JWT:", e);
+      return null;
+    }
+  }
+
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    if (logoutBtn) { // Pastikan elemen ada sebelum diakses
+      logoutBtn.classList.remove('hidden');
+    }
+    const userData = parseJwt(token);
+    if (userData && userData.sub) {
+      if (homeUserName) homeUserName.textContent = "User Aktif";
+    }
+  }
+
+  if (logoutBtn) { // Pastikan elemen ada sebelum menambahkan event listener
+    logoutBtn.onclick = function() {
+      localStorage.removeItem('authToken');
+      window.location.reload();
+    };
+  }
+
+  // Logika jam dari home.html
+  const clockElement = document.getElementById('clock');
+  if (clockElement) {
+    function updateClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+    updateClock(); // Panggil sekali untuk inisialisasi
+    setInterval(updateClock, 1000); // Perbarui setiap detik
+  }
+
+  // Logika background slideshow
+  const slideshowContainer = document.getElementById('bg-slideshow');
+  const backgroundImages = ['background/wallpaper 1.jpeg', 'background/wallpaper 2.jpeg', 'background/wallpaper 3.jpeg', 'background/wallpaper 4.jpeg', 'background/wallpaper.jpeg'];
+  let i = 0;
+
+  function changeBackground(){
+    slideshowContainer.style.backgroundImage = `url('${backgroundImages[i]}')`;
+    i = (i + 1) % backgroundImages.length;
+  }
+  changeBackground();
+  setInterval(changeBackground,5000);
+
+});
+</script>
+<script src="sidebar.js"></script>
+
+</body>
+</html>
